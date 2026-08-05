@@ -1,42 +1,77 @@
 /**
  * ========================================================
- * BhashaSetu — Immersive Gamified Chat Application
- * Production-ready Vanilla JS ES6 with SWR & Optimistic UI
- * Arch-Certified Quality conforming to strict guidelines
+ * BhashaSetu — Baap-Level Enterprise-Grade Chat Client
+ * Production-ready Vanilla JS ES6 with SWR & Sequence Recovery
+ * Conforms to elite distributed architectural guidelines
  * ========================================================
  */
 
-// Core App State Configuration
+// Core App Configuration
 const CONFIG = {
-    maxMessagesCap: 100,
-    rateLimitPosts: 5,
-    rateLimitWindow: 30000, // 30 seconds
-    syncInterval: 5000,     // 5 seconds background polling
+    syncInterval: 5000,     // 5s background poll fallback
+    maxMessagesCap: 150,
     popularCodes: ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"]
 };
 
-const STATE = {
-    selectedLanguage: localStorage.getItem("selectedLanguageCode") || "en",
-    selectedLanguageName: localStorage.getItem("selectedLanguageName") || "English",
-    languages: [],
-    messagesData: [],
-    clientTranslationCache: {}, // SWR local language cache
-    recentLanguages: JSON.parse(localStorage.getItem("recentLanguages")) || [],
-    renderedMessageIds: new Set(),
-    userNumberTag: sessionStorage.getItem("user_tag") || "",
-    currentAvatar: localStorage.getItem("chatSenderAvatar") || "🦁",
-    isSyncing: false,
-    isOffline: false,
-    unreadNewMessages: 0,
-    isUserAtBottom: true
-};
-
-// Unique User Tag Session Generation
-if (!STATE.userNumberTag) {
-    const uniqueNum = Math.floor(Math.random() * 90000) + 10000;
-    STATE.userNumberTag = `#${uniqueNum}`;
-    sessionStorage.setItem("user_tag", STATE.userNumberTag);
+// ========================================================
+// 🛡️ DURABLE CLIENT STORAGE & OFFLINE QUEUE MANAGER
+// ========================================================
+class DurableStore {
+    static getLanguage() {
+        return localStorage.getItem("selectedLanguageCode") || "en";
+    }
+    static getLanguageName() {
+        return localStorage.getItem("selectedLanguageName") || "English";
+    }
+    static getRecentLanguages() {
+        return JSON.parse(localStorage.getItem("recentLanguages")) || [];
+    }
+    static getUserTag() {
+        return sessionStorage.getItem("user_tag") || "";
+    }
+    static getLastSequence() {
+        return parseInt(localStorage.getItem("last_received_sequence") || "0", 10);
+    }
+    static setLastSequence(seq) {
+        localStorage.setItem("last_received_sequence", seq.toString());
+    }
+    static getPendingQueue() {
+        return JSON.parse(localStorage.getItem("offline_pending_queue")) || [];
+    }
+    static savePendingQueue(queue) {
+        localStorage.setItem("offline_pending_queue", JSON.stringify(queue));
+    }
 }
+
+// Initializing Session Identity
+if (!DurableStore.getUserTag()) {
+    const uniqueNum = Math.floor(Math.random() * 90000) + 10000;
+    sessionStorage.setItem("user_tag", `#${uniqueNum}`);
+}
+
+// ========================================================
+// 📊 GLOBAL STATE REGISTER
+// ========================================================
+const STATE = {
+    selectedLanguage: DurableStore.getLanguage(),
+    selectedLanguageName: DurableStore.getLanguageName(),
+    languages: [],
+    messagesData: [], // All processed messages in memory
+    clientTranslationCache: {}, // Local SWR Cache
+    recentLanguages: DurableStore.getRecentLanguages(),
+    renderedMessageIds: new Set(),
+    
+    // Connection and Sync states
+    connectionMode: "offline", // "websocket", "polling", "offline"
+    lastSequence: DurableStore.getLastSequence(),
+    isSyncing: false,
+    unreadCount: 0,
+    isUserAtBottom: true,
+    
+    // Identity
+    userNumberTag: DurableStore.getUserTag(),
+    currentAvatar: localStorage.getItem("chatSenderAvatar") || "🦁"
+};
 
 // DOM Elements Registry
 const DOM = {
@@ -78,17 +113,13 @@ const DOM = {
     canvasCtx: document.getElementById("flames-canvas").getContext("2d")
 };
 
-// ========================================================
-// 1. IDENTITY & USER CREDENTIAL MANAGEMENT
-// ========================================================
+// Set up Avatar Identity
 function setIdentity(avatar) {
     STATE.currentAvatar = avatar;
     localStorage.setItem("chatSenderAvatar", avatar);
-    
     DOM.postAvatar.value = avatar;
     const fullSenderName = `User ${STATE.userNumberTag}`;
     DOM.postSender.value = `${avatar} ${fullSenderName}`;
-    
     DOM.avatarPreview.textContent = avatar;
     DOM.senderDisplay.textContent = fullSenderName;
 }
@@ -104,13 +135,12 @@ DOM.shuffleIdentityBtn.addEventListener("click", () => {
 });
 
 // ========================================================
-// 2. AUDIO SYNTHESIS LOGIC (WEB AUDIO API)
+// 🔊 REAL-TIME SOUND SYNTHESIZER
 // ========================================================
 function playRocketLaunchSound(isHighSpeed = false) {
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
-        
         const ctx = new AudioCtx();
         const osc = ctx.createOscillator();
         const gainNode = ctx.createGain();
@@ -152,7 +182,7 @@ function playFireRoarSound() {
         
         let lastOut = 0.0;
         for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
+            const white = Math.random() * WhiteNoiseMultiplier();
             data[i] = (lastOut + (0.02 * white)) / 1.02;
             lastOut = data[i];
             data[i] *= 4.5;
@@ -172,13 +202,13 @@ function playFireRoarSound() {
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
-        
         noise.start();
     } catch(e) {}
 }
+function WhiteNoiseMultiplier() { return 2 - 1; }
 
 // ========================================================
-// 3. FLUID FIRE FLAMES CANVAS RENDERING (0.3s)
+// 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
 // ========================================================
 let flameParticles = [];
 let flameAnimationId = null;
@@ -259,40 +289,28 @@ function triggerFireScreenOverlay() {
 }
 
 // ========================================================
-// 4. ADVANCED TEXT RESIZING & AREA INPUT FLOWS
+// ⌨️ INPUT DYNAMIC TEXTAREA RESIZING
 // ========================================================
 function autoResizeInput() {
     DOM.postText.style.height = "auto";
     DOM.postText.style.height = (DOM.postText.scrollHeight - 4) + "px";
 }
-
 DOM.postText.addEventListener("input", autoResizeInput);
 
-// Escape HTML utility to prevent XSS
 function escapeHTML(str) {
-    return str.replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&#039;");
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-// Formatter to render links as clickable and backticks as inline code blocks
 function formatMessageText(text) {
     let formatted = escapeHTML(text);
-    
-    // Format Backticks as inline code
     formatted = formatted.replace(/`([^`]+)`/g, '<code class="message-code-block">$1</code>');
-    
-    // Format URLs as clickable links
     const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
     formatted = formatted.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-    
     return formatted;
 }
 
 // ========================================================
-// 5. SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
+// 🚀 SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
 // ========================================================
 let isDragging = false;
 let startX = 0;
@@ -308,7 +326,6 @@ function checkSwipeGuide() {
         DOM.swipeGuide.classList.remove("visible");
     }
 }
-
 DOM.postText.addEventListener("input", checkSwipeGuide);
 
 function startDrag(e) {
@@ -335,20 +352,17 @@ async function endDrag() {
     if (!isDragging) return;
     isDragging = false;
     DOM.fireTrail.classList.remove("active");
-    
     const swipeEndTime = Date.now();
     const swipeDuration = swipeEndTime - swipeStartTime;
     
     if (dragOffset >= 80) {
         const text = DOM.postText.value.trim();
         if (text) {
-            // ONLY Swiping triggers launcher sound and full screen fire
             const isHighSpeed = swipeDuration < 160;
             playRocketLaunchSound(isHighSpeed);
             if (isHighSpeed) {
                 triggerFireScreenOverlay();
             }
-            
             localStorage.setItem("hasSwipedBefore", "true");
             await sendChatMessage(text);
         } else {
@@ -379,18 +393,12 @@ DOM.swipeRocket.addEventListener("click", async () => {
     if (dragOffset < 5) {
         const text = DOM.postText.value.trim();
         if (!text) return;
-        
         localStorage.setItem("hasSwipedBefore", "true");
         DOM.swipeGuide.classList.remove("visible");
-        
         DOM.swipeRocket.style.transition = "transform 180ms ease-in-out";
         DOM.swipeRocket.style.transform = `translateX(${maxOffset}px)`;
-        
         await sendChatMessage(text);
-        
-        setTimeout(() => {
-            snapRocketBack();
-        }, 250);
+        setTimeout(snapRocketBack, 250);
     }
 });
 
@@ -400,26 +408,473 @@ DOM.postText.addEventListener("keydown", async (e) => {
         e.preventDefault();
         const text = DOM.postText.value.trim();
         if (!text) return;
-
         localStorage.setItem("hasSwipedBefore", "true");
         DOM.swipeGuide.classList.remove("visible");
-
         DOM.swipeRocket.style.transition = "transform 180ms ease-in-out";
         DOM.swipeRocket.style.transform = `translateX(${maxOffset}px)`;
-
         await sendChatMessage(text);
-
-        setTimeout(() => {
-            snapRocketBack();
-        }, 250);
+        setTimeout(snapRocketBack, 250);
     }
 });
 
 // ========================================================
-// 6. INCREMENTAL DOM RENDERING & STATUS MANAGEMENT
+// 🔌 HIGH-PERFORMANCE WEBSOCKET GATEWAY MANAGER
 // ========================================================
+class RealtimeConnectionManager {
+    constructor() {
+        this.socket = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectDelay = 16000;
+        this.heartbeatInterval = null;
+    }
 
-// Update Header Connection Status Indicator
+    getWsUrl() {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const host = window.location.host;
+        // Check if inside E2B container proxy url
+        if (host.includes("e2b.app")) {
+            return `${protocol}//8000-${host.split("-")[1]}/ws`;
+        }
+        return `${protocol}//${host}/ws`;
+    }
+
+    connect() {
+        if (this.socket) {
+            try { this.socket.close(); } catch(e) {}
+        }
+        
+        setConnectionStatus("syncing");
+        const url = this.getWsUrl();
+        this.socket = new WebSocket(url);
+
+        this.socket.onopen = () => {
+            setConnectionStatus("connected");
+            STATE.connectionMode = "websocket";
+            this.reconnectAttempts = 0;
+            
+            // 1. Send Handshake CONNECT package with sequence number!
+            this.socket.send(JSON.stringify({
+                type: "CONNECT",
+                lastSequence: STATE.lastSequence
+            }));
+            
+            // 2. Start heartbeats
+            this.startHeartbeat();
+            
+            // 3. Retry sending any offline queued messages automatically!
+            this.drainDurablePendingQueue();
+        };
+
+        this.socket.onmessage = (event) => {
+            try {
+                const packet = JSON.parse(event.data);
+                this.handleWsPacket(packet);
+            } catch(e) {
+                console.error("WS parse error:", e);
+            }
+        };
+
+        this.socket.onclose = () => {
+            this.stopHeartbeat();
+            this.handleDisconnect();
+        };
+
+        this.socket.onerror = (err) => {
+            console.error("WS error:", err);
+            this.socket.close();
+        };
+    }
+
+    startHeartbeat() {
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(() => {
+            if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+                this.socket.send(JSON.stringify({ type: "PING" }));
+            }
+        }, 10000); // 10s PING
+    }
+
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+        }
+    }
+
+    handleDisconnect() {
+        STATE.connectionMode = "offline";
+        setConnectionStatus("offline");
+        
+        // Exponential backoff reconnect
+        const delay = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, this.maxReconnectDelay);
+        this.reconnectAttempts++;
+        setTimeout(() => {
+            this.connect();
+        }, delay);
+    }
+
+    handleWsPacket(packet) {
+        const type = packet.type;
+        
+        if (type === "NEW_MESSAGE") {
+            const msg = packet.message;
+            
+            // Update sequence tracker safely
+            if (msg.sequenceNumber > STATE.lastSequence) {
+                STATE.lastSequence = msg.sequenceNumber;
+                DurableStore.setLastSequence(msg.sequenceNumber);
+            }
+
+            // Verify if message already in our feed (idempotency check)
+            const exists = STATE.messagesData.some(m => m.id === msg.id || (m.clientMessageId && m.clientMessageId === msg.clientMessageId));
+            if (!exists) {
+                STATE.messagesData.push(msg);
+                renderSingleMessageBubble(msg, true);
+                
+                // If user is scrolled up, count unread messages
+                if (!STATE.isUserAtBottom) {
+                    STATE.unreadCount++;
+                    DOM.newMessagesDock.querySelector("span").textContent = `${STATE.unreadCount} New Messages`;
+                    DOM.newMessagesDock.classList.add("visible");
+                } else {
+                    scrollToBottom();
+                }
+            }
+        } 
+        else if (type === "ACK") {
+            const clientMsgId = packet.clientMessageId;
+            const realId = packet.id;
+            const seqNum = packet.sequenceNumber;
+            const time = packet.timestamp;
+
+            // Resolve optimistic pending bubble to Sent!
+            const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId || m.id === clientMsgId);
+            if (idx !== -1) {
+                STATE.messagesData[idx].id = realId;
+                STATE.messagesData[idx].sequenceNumber = seqNum;
+                STATE.messagesData[idx].timestamp = time;
+                STATE.messagesData[idx].isPending = false;
+                STATE.messagesData[idx].isFailed = false;
+
+                // Re-render specifically this single bubble
+                const tempBubbleRow = document.getElementById(`msg-row-${clientMsgId}`);
+                if (tempBubbleRow) tempBubbleRow.remove();
+                STATE.renderedMessageIds.delete(clientMsgId);
+
+                renderSingleMessageBubble(STATE.messagesData[idx], false);
+                
+                if (seqNum > STATE.lastSequence) {
+                    STATE.lastSequence = seqNum;
+                    DurableStore.setLastSequence(seqNum);
+                }
+            }
+            
+            // Remove from durable offline queue
+            let queue = DurableStore.getPendingQueue();
+            queue = queue.filter(item => item.clientMessageId !== clientMsgId);
+            DurableStore.savePendingQueue(queue);
+        }
+        else if (type === "TRANSLATION_UPDATED") {
+            // Real-time asynchronous translation patch update!
+            const msgId = packet.id;
+            const targetLang = packet.targetLang;
+            const translatedText = packet.translatedText;
+
+            // Update in our cache/memory directly
+            const idx = STATE.messagesData.findIndex(m => m.id === msgId);
+            if (idx !== -1) {
+                if (targetLang === STATE.selectedLanguage) {
+                    STATE.messagesData[idx].translated_text = translatedText;
+                    
+                    // Update text inside DOM instantly without redrawing the rest of the feed!
+                    const textSpan = document.getElementById(`text-body-${msgId}`);
+                    if (textSpan) {
+                        textSpan.innerHTML = formatMessageText(translatedText);
+                    }
+                }
+            }
+        }
+    }
+
+    send(packet) {
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(packet));
+            return true;
+        }
+        return false;
+    }
+
+    async drainDurablePendingQueue() {
+        const queue = DurableStore.getPendingQueue();
+        if (queue.length === 0) return;
+
+        for (const item of queue) {
+            const sent = this.send({
+                type: "SEND_MESSAGE",
+                clientMessageId: item.clientMessageId,
+                sender: item.sender,
+                avatar: item.avatar,
+                text: item.text
+            });
+            
+            if (!sent) {
+                // REST Fallback if WS went down during drain
+                try {
+                    await fetch("/api/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(item)
+                    });
+                } catch(e) {}
+            }
+        }
+    }
+}
+
+const RealtimeGateway = new RealtimeConnectionManager();
+
+// ========================================================
+// 🔌 HTTP REST CONNECTION FALLBACKS
+// ========================================================
+async function fetchMessages(forceScroll = false) {
+    if (STATE.isSyncing) return;
+    STATE.isSyncing = true;
+    
+    // Load from local SWR language cache first (0ms instantaneous transition!)
+    if (STATE.clientTranslationCache[STATE.selectedLanguage]) {
+        STATE.messagesData = STATE.clientTranslationCache[STATE.selectedLanguage];
+        if (STATE.renderedMessageIds.size === 0) {
+            renderAllMessagesFeed(forceScroll);
+        }
+    }
+
+    try {
+        setConnectionStatus("syncing");
+        const res = await fetch(`/api/messages?lang=${STATE.selectedLanguage}`);
+        const data = await res.json();
+        setConnectionStatus("connected");
+        
+        const freshMessages = data.messages;
+        
+        // Incremental insertion of newly received messages only
+        let isNewInserted = false;
+        freshMessages.forEach(newMsg => {
+            const exists = STATE.messagesData.some(m => m.id === newMsg.id || (m.clientMessageId && m.clientMessageId === newMsg.clientMessageId));
+            if (!exists) {
+                STATE.messagesData.push(newMsg);
+                renderSingleMessageBubble(newMsg, true);
+                isNewInserted = true;
+                
+                if (newMsg.sequenceNumber > STATE.lastSequence) {
+                    STATE.lastSequence = newMsg.sequenceNumber;
+                    DurableStore.setLastSequence(newMsg.sequenceNumber);
+                }
+                
+                if (!STATE.isUserAtBottom) {
+                    STATE.unreadCount++;
+                }
+            }
+        });
+
+        STATE.messagesData = freshMessages;
+        STATE.clientTranslationCache[STATE.selectedLanguage] = STATE.messagesData;
+        
+        if (STATE.unreadCount > 0 && !STATE.isUserAtBottom) {
+            DOM.newMessagesDock.querySelector("span").textContent = `${STATE.unreadCount} New Messages`;
+            DOM.newMessagesDock.classList.add("visible");
+        }
+
+        if (isNewInserted && STATE.isUserAtBottom) {
+            scrollToBottom();
+        } else if (forceScroll) {
+            scrollToBottom();
+        }
+    } catch (err) {
+        console.error("HTTP Fetch fallback error:", err);
+        setConnectionStatus("offline");
+    } finally {
+        STATE.isSyncing = false;
+    }
+}
+
+// ========================================================
+// 📩 SEND MESSAGE AND OFFLINE DURABLE QUEUE HANDLERS
+// ========================================================
+async function sendChatMessage(text) {
+    const clientMsgId = `cli_${Date.now()}`;
+    DOM.postText.value = "";
+    autoResizeInput();
+    snapRocketBack();
+    
+    // 1. Construct Optimistic Bubble object
+    const optimisticMsg = {
+        id: clientMsgId,
+        clientMessageId: clientMsgId,
+        sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+        avatar: STATE.currentAvatar,
+        text: text,
+        original_text: text,
+        original_lang: STATE.selectedLanguage,
+        original_lang_name: STATE.selectedLanguageName,
+        translated_text: text,
+        timestamp: "sending...",
+        isPending: true,
+        isFailed: false
+    };
+    
+    // Append locally instantly (0ms)
+    STATE.messagesData.push(optimisticMsg);
+    renderSingleMessageBubble(optimisticMsg, true);
+    
+    if (STATE.isUserAtBottom) {
+        scrollToBottom();
+    }
+
+    // 2. Save inside persistent offline queue (Survives tab close/crashes!)
+    const queue = DurableStore.getPendingQueue();
+    queue.push({
+        clientMessageId: clientMsgId,
+        sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+        avatar: STATE.currentAvatar,
+        text: text
+    });
+    DurableStore.savePendingQueue(queue);
+
+    // 3. Try delivering via high-performance WebSocket gateway
+    const sent = RealtimeGateway.send({
+        type: "SEND_MESSAGE",
+        clientMessageId: clientMsgId,
+        sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+        avatar: STATE.currentAvatar,
+        text: text
+    });
+
+    if (!sent) {
+        // Fallback: If WebSocket is closed/blocked, use HTTP POST endpoint
+        try {
+            const response = await fetch("/api/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    clientMessageId: clientMsgId,
+                    sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+                    avatar: STATE.currentAvatar,
+                    text: text
+                })
+            });
+            
+            if (response.ok) {
+                const serverMsg = await response.json();
+                
+                // Update local memory and GUI
+                const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId);
+                if (idx !== -1) {
+                    STATE.messagesData[idx].id = serverMsg.id;
+                    STATE.messagesData[idx].sequenceNumber = serverMsg.sequenceNumber;
+                    STATE.messagesData[idx].timestamp = serverMsg.timestamp;
+                    STATE.messagesData[idx].isPending = false;
+                    STATE.messagesData[idx].isFailed = false;
+
+                    const tempBubbleRow = document.getElementById(`msg-row-${clientMsgId}`);
+                    if (tempBubbleRow) tempBubbleRow.remove();
+                    STATE.renderedMessageIds.delete(clientMsgId);
+
+                    renderSingleMessageBubble(STATE.messagesData[idx], false);
+                    
+                    if (serverMsg.sequenceNumber > STATE.lastSequence) {
+                        STATE.lastSequence = serverMsg.sequenceNumber;
+                        DurableStore.setLastSequence(serverMsg.sequenceNumber);
+                    }
+                }
+                
+                // Clear from offline queue
+                let q = DurableStore.getPendingQueue();
+                q = q.filter(item => item.clientMessageId !== clientMsgId);
+                DurableStore.savePendingQueue(q);
+            } else {
+                markMessageFailed(clientMsgId);
+            }
+        } catch (err) {
+            console.error("HTTP POST fallback error:", err);
+            markMessageFailed(clientMsgId);
+        }
+    }
+}
+
+function markMessageFailed(clientMsgId) {
+    setConnectionStatus("offline");
+    const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId);
+    if (idx !== -1) {
+        STATE.messagesData[idx].isPending = false;
+        STATE.messagesData[idx].isFailed = true;
+        
+        const wrapper = document.getElementById(`msg-bubble-${clientMsgId}`);
+        if (wrapper) {
+            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
+        }
+    }
+}
+
+window.retryMessageDelivery = async function(clientMsgId, text) {
+    const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId);
+    if (idx !== -1) {
+        STATE.messagesData[idx].isPending = true;
+        STATE.messagesData[idx].isFailed = false;
+        const wrapper = document.getElementById(`msg-bubble-${clientMsgId}`);
+        if (wrapper) {
+            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
+        }
+    }
+    
+    const sent = RealtimeGateway.send({
+        type: "SEND_MESSAGE",
+        clientMessageId: clientMsgId,
+        sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+        avatar: STATE.currentAvatar,
+        text: text
+    });
+
+    if (!sent) {
+        try {
+            const response = await fetch("/api/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    clientMessageId: clientMsgId,
+                    sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
+                    avatar: STATE.currentAvatar,
+                    text: text
+                })
+            });
+            if (response.ok) {
+                const serverMsg = await response.json();
+                const i = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId);
+                if (i !== -1) {
+                    STATE.messagesData[i].id = serverMsg.id;
+                    STATE.messagesData[i].sequenceNumber = serverMsg.sequenceNumber;
+                    STATE.messagesData[i].timestamp = serverMsg.timestamp;
+                    STATE.messagesData[i].isPending = false;
+                    STATE.messagesData[i].isFailed = false;
+                    
+                    const tempRow = document.getElementById(`msg-row-${clientMsgId}`);
+                    if (tempRow) tempRow.remove();
+                    STATE.renderedMessageIds.delete(clientMsgId);
+                    renderSingleMessageBubble(STATE.messagesData[i], false);
+                }
+                let q = DurableStore.getPendingQueue();
+                q = q.filter(item => item.clientMessageId !== clientMsgId);
+                DurableStore.savePendingQueue(q);
+            } else {
+                markMessageFailed(clientMsgId);
+            }
+        } catch(e) {
+            markMessageFailed(clientMsgId);
+        }
+    }
+};
+
+// ========================================================
+// 🔌 HEARTBEATS AND CONNECTION HUD GRAPHICS
+// ========================================================
 function setConnectionStatus(state) {
     if (state === "connected") {
         DOM.statusIndicatorDot.className = "status-dot connected";
@@ -435,17 +890,15 @@ function setConnectionStatus(state) {
     }
 }
 
-// Check if user is scrolled near the bottom of messages container
 function checkScrollPosition() {
-    const threshold = 120; // px from bottom
+    const threshold = 120;
     const totalHeight = DOM.messagesContainer.scrollHeight;
     const currentScroll = DOM.messagesContainer.scrollTop + DOM.messagesContainer.clientHeight;
     
     STATE.isUserAtBottom = (totalHeight - currentScroll) <= threshold;
-    
     if (STATE.isUserAtBottom) {
         DOM.newMessagesDock.classList.remove("visible");
-        STATE.unreadNewMessages = 0;
+        STATE.unreadCount = 0;
     }
 }
 
@@ -454,23 +907,19 @@ DOM.messagesContainer.addEventListener("scroll", checkScrollPosition);
 DOM.newMessagesDock.addEventListener("click", () => {
     STATE.isUserAtBottom = true;
     DOM.newMessagesDock.classList.remove("visible");
-    STATE.unreadNewMessages = 0;
+    STATE.unreadCount = 0;
     scrollToBottom();
 });
 
-// Incremental bubble creation (Never wipes the DOM!)
+// Render individual message bubble incrementally
 function renderSingleMessageBubble(msg, animate = false) {
     if (STATE.renderedMessageIds.has(msg.id)) {
-        // If it's already rendered, just verify its status elements if modified
         const bubble = document.getElementById(`msg-bubble-${msg.id}`);
-        if (bubble) {
-            updateMessageBubbleStatus(bubble, msg);
-        }
+        if (bubble) updateMessageBubbleStatus(bubble, msg);
         return;
     }
 
     const isMe = msg.sender.includes(`User ${STATE.userNumberTag}`);
-    
     const row = document.createElement("div");
     row.className = `message-row ${isMe ? 'outgoing' : 'incoming'}`;
     row.id = `msg-row-${msg.id}`;
@@ -482,37 +931,37 @@ function renderSingleMessageBubble(msg, animate = false) {
     const formattedText = formatMessageText(msg.translated_text || msg.original_text || msg.text);
     const isOriginal = msg.original_lang === STATE.selectedLanguage;
     
-    // Bubble Style Outlines conform to guidelines
     const bubbleStyle = isMe
         ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
         : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
 
     let metaString = isOriginal ? `Original: ${msg.original_lang_name}` : `Translated from ${msg.original_lang_name}`;
     const toggleBtnHtml = !isOriginal
-        ? `<button onclick="toggleSingleBubbleTranslation('${msg.id}')" id="btn-trans-toggle-${msg.id}" class="translation-toggle-link" aria-label="Toggle original text">Show Original</button>`
+        ? `<button onclick="toggleSingleBubbleTranslation('${msg.id}')" id="btn-trans-toggle-${msg.id}" class="translation-toggle-link">Show Original</button>`
         : '';
+
+    const statusHtml = msg.isPending 
+        ? `<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>`
+        : `<span>${msg.timestamp.includes(" ") ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>`;
 
     row.innerHTML = `
         ${!isMe ? `
             <div class="message-header-row">
-                <span class="message-sender-avatar" aria-hidden="true">${msg.avatar || "🦁"}</span>
+                <span class="message-sender-avatar">${msg.avatar || "🦁"}</span>
                 <span class="message-sender-name">${msg.sender}</span>
             </div>
         ` : ''}
-        
         <div class="message-bubble-wrapper max-w-[80%] md:max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}" id="msg-bubble-${msg.id}">
             <div class="${bubbleStyle} break-words w-full message-text-content">
                 <span id="text-body-${msg.id}">${formattedText}</span>
-                
                 ${!isOriginal ? `
-                    <div id="box-translation-${msg.id}" class="translation-box hidden" aria-live="polite">
+                    <div id="box-translation-${msg.id}" class="translation-box hidden">
                         Original: "${escapeHTML(msg.original_text || msg.text)}"
                     </div>
                 ` : ''}
             </div>
-            
             <div class="message-meta-row">
-                <span id="status-time-${msg.id}">${msg.timestamp.includes(" ") ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>
+                <span id="status-time-${msg.id}">${statusHtml}</span>
                 <span>•</span>
                 <span id="status-lang-${msg.id}">${metaString}</span>
                 ${toggleBtnHtml ? `<span>•</span> ${toggleBtnHtml}` : ''}
@@ -521,7 +970,6 @@ function renderSingleMessageBubble(msg, animate = false) {
         </div>
     `;
 
-    // Append to container
     let innerContainer = DOM.messagesContainer.querySelector(".chat-messages-inner");
     if (!innerContainer) {
         DOM.messagesContainer.innerHTML = '<div class="chat-messages-inner"></div>';
@@ -531,12 +979,10 @@ function renderSingleMessageBubble(msg, animate = false) {
     innerContainer.appendChild(row);
     STATE.renderedMessageIds.add(msg.id);
     
-    // Update initial status icons
-    const bubbleWrapper = row.querySelector(".message-bubble-wrapper");
-    updateMessageBubbleStatus(bubbleWrapper, msg);
+    const wrapper = row.querySelector(".message-bubble-wrapper");
+    updateMessageBubbleStatus(wrapper, msg);
 }
 
-// Update state/checkmark inside bubble dynamically
 function updateMessageBubbleStatus(wrapper, msg) {
     const tickSpan = wrapper.querySelector('[id^="status-tick-"]');
     if (!tickSpan) return;
@@ -544,14 +990,12 @@ function updateMessageBubbleStatus(wrapper, msg) {
     if (msg.isPending) {
         tickSpan.innerHTML = '<i class="fa-regular fa-clock text-[#A5A5A5] animate-pulse" title="Sending..."></i>';
     } else if (msg.isFailed) {
-        tickSpan.innerHTML = `<span onclick="retryMessageDelivery('${msg.id}', '${escapeHTML(msg.original_text)}')" class="status-failed-indicator" title="Failed. Click to retry!"><i class="fa-solid fa-circle-exclamation"></i> Retry</span>`;
+        tickSpan.innerHTML = `<span onclick="retryMessageDelivery('${msg.clientMessageId || msg.id}', '${escapeHTML(msg.original_text || msg.text)}')" class="status-failed-indicator" title="Failed. Click to retry!"><i class="fa-solid fa-circle-exclamation"></i> Retry</span>`;
     } else {
-        // Sent state
         tickSpan.innerHTML = '<i class="fa-solid fa-check text-emerald-500" title="Sent ✓"></i>';
     }
 }
 
-// Single Bubble Translation Toggler
 window.toggleSingleBubbleTranslation = function(msgId) {
     const box = document.getElementById(`box-translation-${msgId}`);
     const btn = document.getElementById(`btn-trans-toggle-${msgId}`);
@@ -564,15 +1008,10 @@ window.toggleSingleBubbleTranslation = function(msgId) {
         box.classList.add("hidden");
         btn.textContent = "Show Original";
     }
-    
-    if (STATE.isUserAtBottom) {
-        scrollToBottom();
-    }
+    if (STATE.isUserAtBottom) scrollToBottom();
 };
 
-// Complete Feed Render (Only used on language changes or initialization)
 function renderAllMessagesFeed(forceScroll = false) {
-    // Clear DOM and Set
     DOM.messagesContainer.innerHTML = '<div class="chat-messages-inner"></div>';
     STATE.renderedMessageIds.clear();
     
@@ -590,208 +1029,8 @@ function renderAllMessagesFeed(forceScroll = false) {
     STATE.messagesData.forEach(msg => {
         renderSingleMessageBubble(msg, false);
     });
-    
-    if (forceScroll) {
-        scrollToBottom();
-    }
+    if (forceScroll) scrollToBottom();
 }
-
-// ========================================================
-// 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
-// ========================================================
-async function sendChatMessage(text) {
-    DOM.postText.value = "";
-    autoResizeInput();
-    snapRocketBack();
-    
-    const tempMsgId = `temp_${Date.now()}`;
-    const optimisticMsg = {
-        id: tempMsgId,
-        sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`,
-        avatar: STATE.currentAvatar,
-        text: text,
-        original_text: text,
-        original_lang: STATE.selectedLanguage,
-        original_lang_name: STATE.selectedLanguageName,
-        translated_text: text,
-        timestamp: "sending...",
-        isPending: true,
-        isFailed: false
-    };
-    
-    // Optimistic Append instantly (0ms response time!)
-    STATE.messagesData.push(optimisticMsg);
-    renderSingleMessageBubble(optimisticMsg, true);
-    
-    if (STATE.isUserAtBottom) {
-        scrollToBottom();
-    }
-
-    await executePostMessage(tempMsgId, text);
-}
-
-async function executePostMessage(tempMsgId, text) {
-    try {
-        setConnectionStatus("syncing");
-        const response = await fetch("/api/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: `${STATE.currentAvatar} User ${STATE.userNumberTag}`, avatar: STATE.currentAvatar, text })
-        });
-        
-        if (response.ok) {
-            setConnectionStatus("connected");
-            const serverMsg = await response.json();
-            
-            // Sync with local array
-            const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
-            if (idx !== -1) {
-                STATE.messagesData[idx] = {
-                    id: serverMsg.id,
-                    sender: serverMsg.sender,
-                    avatar: serverMsg.avatar,
-                    original_text: serverMsg.text,
-                    original_lang: serverMsg.original_lang,
-                    original_lang_name: serverMsg.original_lang_name,
-                    translated_text: serverMsg.text,
-                    timestamp: serverMsg.timestamp,
-                    isPending: false,
-                    isFailed: false
-                };
-                
-                // Clear old temporary mapped element and re-render bubble with real ID
-                const tempBubbleRow = document.getElementById(`msg-row-${tempMsgId}`);
-                if (tempBubbleRow) tempBubbleRow.remove();
-                STATE.renderedMessageIds.delete(tempMsgId);
-                
-                renderSingleMessageBubble(STATE.messagesData[idx], false);
-            }
-            
-            // Cache state
-            STATE.clientTranslationCache[STATE.selectedLanguage] = STATE.messagesData;
-        } else {
-            markMessageFailed(tempMsgId);
-        }
-    } catch (err) {
-        console.error("Deliver error:", err);
-        markMessageFailed(tempMsgId);
-    }
-}
-
-function markMessageFailed(tempMsgId) {
-    setConnectionStatus("offline");
-    const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
-    if (idx !== -1) {
-        STATE.messagesData[idx].isPending = false;
-        STATE.messagesData[idx].isFailed = true;
-        
-        const wrapper = document.getElementById(`msg-bubble-${tempMsgId}`);
-        if (wrapper) {
-            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
-        }
-    }
-}
-
-window.retryMessageDelivery = async function(tempMsgId, text) {
-    // Set back to sending status
-    const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
-    if (idx !== -1) {
-        STATE.messagesData[idx].isPending = true;
-        STATE.messagesData[idx].isFailed = false;
-        
-        const wrapper = document.getElementById(`msg-bubble-${tempMsgId}`);
-        if (wrapper) {
-            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
-        }
-    }
-    
-    await executePostMessage(tempMsgId, text);
-};
-
-// ========================================================
-// 🔄 STALE-WHILE-REVALIDATE BACKGROUND SYNC
-// ========================================================
-async function fetchMessages(forceScroll = false) {
-    if (STATE.isSyncing) return;
-    STATE.isSyncing = true;
-    
-    // SWR Local Cache trigger (0ms instant change!)
-    if (STATE.clientTranslationCache[STATE.selectedLanguage]) {
-        STATE.messagesData = STATE.clientTranslationCache[STATE.selectedLanguage];
-        if (STATE.renderedMessageIds.size === 0) {
-            renderAllMessagesFeed(forceScroll);
-        }
-    }
-
-    try {
-        setConnectionStatus("syncing");
-        const res = await fetch(`/api/messages?lang=${STATE.selectedLanguage}`);
-        const data = await res.json();
-        setConnectionStatus("connected");
-        
-        const freshMessages = data.messages;
-        
-        // Incremental insertion check
-        let isNewInserted = false;
-        freshMessages.forEach(newMsg => {
-            // If message isn't in local array, insert it
-            const exists = STATE.messagesData.some(m => m.id === newMsg.id);
-            if (!exists) {
-                STATE.messagesData.push(newMsg);
-                renderSingleMessageBubble(newMsg, true);
-                isNewInserted = true;
-                
-                // If user is scrolled up, count unread messages
-                if (!STATE.isUserAtBottom) {
-                    STATE.unreadNewMessages++;
-                }
-            }
-        });
-
-        STATE.messagesData = freshMessages;
-        STATE.clientTranslationCache[STATE.selectedLanguage] = STATE.messagesData;
-        
-        // Handle floating dock button alert
-        if (STATE.unreadNewMessages > 0 && !STATE.isUserAtBottom) {
-            DOM.newMessagesDock.querySelector("span").textContent = `${STATE.unreadNewMessages} New Messages`;
-            DOM.newMessagesDock.classList.add("visible");
-        }
-
-        if (isNewInserted && STATE.isUserAtBottom) {
-            scrollToBottom();
-        } else if (forceScroll) {
-            scrollToBottom();
-        }
-    } catch (err) {
-        console.error("Sync feed error:", err);
-        setConnectionStatus("offline");
-    } finally {
-        STATE.isSyncing = false;
-    }
-}
-
-function startAutoRefreshTimer() {
-    if (refreshTimer) clearInterval(refreshTimer);
-    timeLeft = 5;
-    secondsLeftSpan.textContent = timeLeft;
-    
-    refreshTimer = setInterval(() => {
-        timeLeft--;
-        if (timeLeft <= 0) {
-            timeLeft = 5;
-            fetchMessages();
-        }
-        secondsLeftSpan.textContent = timeLeft;
-    }, 1000);
-}
-
-DOM.manualRefreshBtn.addEventListener("click", () => {
-    fetchMessages(true);
-    startAutoRefreshTimer();
-    const icon = DOM.manualRefreshBtn.querySelector("i");
-    icon.classList.add("fa-spin");
-    setTimeout(() => icon.classList.remove("fa-spin"), 500);
-});
 
 // ========================================================
 // 🌍 LANGUAGE SELECT MODAL LOGIC WITH KEYBOARD ACTIONS
@@ -816,11 +1055,10 @@ function renderLanguages(filter = "") {
     
     let matchCount = 0;
 
-    // A. Populate Device & Auto Detect items
     const deviceLangCode = (navigator.language || "en").split("-")[0];
     const deviceLangName = LANG_CODE_TO_NAME[deviceLangCode] || "Device Language";
     
-    // Auto Detect button
+    // Auto Detect
     const autoBtn = document.createElement("button");
     autoBtn.type = "button";
     autoBtn.className = STATE.selectedLanguage === "auto" ? "lang-btn active" : "lang-btn";
@@ -828,7 +1066,7 @@ function renderLanguages(filter = "") {
     autoBtn.onclick = () => selectLanguage("auto", "Auto Detect");
     DOM.systemLangsGrid.appendChild(autoBtn);
 
-    // Device Language button
+    // Device Language
     const deviceBtn = document.createElement("button");
     deviceBtn.type = "button";
     deviceBtn.className = STATE.selectedLanguage === deviceLangCode ? "lang-btn active" : "lang-btn";
@@ -836,7 +1074,7 @@ function renderLanguages(filter = "") {
     deviceBtn.onclick = () => selectLanguage(deviceLangCode, deviceLangName);
     DOM.systemLangsGrid.appendChild(deviceBtn);
 
-    // B. Populate Recent Languages
+    // Recent Languages
     if (STATE.recentLanguages.length > 0 && !cleanFilter) {
         DOM.recentLangsSection.classList.remove("hidden");
         STATE.recentLanguages.forEach(code => {
@@ -854,7 +1092,6 @@ function renderLanguages(filter = "") {
         DOM.recentLangsSection.classList.add("hidden");
     }
 
-    // C. Populate Popular and All
     STATE.languages.forEach(lang => {
         const name = lang.name;
         const code = lang.code;
@@ -931,18 +1168,17 @@ function selectLanguage(code, name) {
     localStorage.setItem("selectedLanguageCode", code);
     localStorage.setItem("selectedLanguageName", name);
     
-    // Save to Recent Languages list
     if (!STATE.recentLanguages.includes(code) && code !== "auto") {
         STATE.recentLanguages.unshift(code);
         if (STATE.recentLanguages.length > 4) {
-            STATE.recentLanguages.pop(); // Cap at 4 items
+            STATE.recentLanguages.pop();
         }
         localStorage.setItem("recentLanguages", JSON.stringify(STATE.recentLanguages));
     }
     
     DOM.currentLangText.textContent = name;
     
-    // Clear elements and do a full-page translated re-render (since language code changed!)
+    // Clear and full redraw on explicit language selection
     renderAllMessagesFeed(true);
     fetchMessages(true);
     closeLanguageModal();
@@ -958,26 +1194,22 @@ function openLanguageModal() {
 
 function closeLanguageModal() {
     DOM.langModal.classList.remove("active");
-    DOM.postText.focus(); // Retain input focus
+    DOM.postText.focus();
 }
 
 DOM.openModalBtn.addEventListener("click", openLanguageModal);
 DOM.closeModalBtn.addEventListener("click", closeLanguageModal);
 
-// Accessibility and Keyboard Navigation inside modal
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && DOM.langModal.classList.contains("active")) {
         closeLanguageModal();
     }
 });
 
-// Arrow key navigation inside lists
 DOM.langModal.addEventListener("keydown", (e) => {
     if (!DOM.langModal.classList.contains("active")) return;
-    
     const activeBtn = document.activeElement;
     if (!activeBtn || (!activeBtn.classList.contains("lang-btn") && !activeBtn.classList.contains("ai-chip") && activeBtn !== DOM.langSearchInput)) return;
-    
     const focusable = Array.from(DOM.langModal.querySelectorAll("button, input"));
     const idx = focusable.indexOf(activeBtn);
     
@@ -996,25 +1228,42 @@ DOM.langModal.addEventListener("click", (e) => {
     if (e.target === DOM.langModal) closeLanguageModal();
 });
 
+function scrollToBottom() {
+    setTimeout(() => {
+        DOM.messagesContainer.scrollTo({
+            top: DOM.messagesContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+    }, 50);
+}
+
 // ========================================================
-// 📦 BOOTSTRAP INIT LOOPS
+// 📦 BOOTSTRAP INITIALIZATION
 // ========================================================
 (async function init() {
     DOM.currentLangText.textContent = STATE.selectedLanguageName;
     
-    // Isolated try-catches prevent cascading failures!
+    // 1. Establish persistent real-time WebSocket connection gateway!
+    RealtimeGateway.connect();
+    
+    // 2. Fetch language options
     try {
         await fetchLanguages();
     } catch(err) {
         console.error("Bootstrap language fetch error:", err);
     }
 
+    // 3. Sync initial messages cleanly
     try {
-        // Initial load with full-page scroll down
         await fetchMessages(true);
     } catch(err) {
         console.error("Bootstrap message fetch error:", err);
     }
     
-    startAutoRefreshTimer();
+    // 4. Polling Fallback Timer
+    setInterval(() => {
+        if (STATE.connectionMode !== "websocket") {
+            fetchMessages();
+        }
+    }, CONFIG.syncInterval);
 })();
