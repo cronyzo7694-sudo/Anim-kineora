@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BhashaSetu — Universal Chat Room</title>
+    <title>BhashaSetu — Global Chat Room</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for elite, elegant typography -->
+    <!-- Google Fonts for elite typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
-    <!-- FontAwesome for highly-refined icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for neat icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #fbfbfc 50%, #e8ecf2 100%);
-            color: #1d1d1f;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f3f4f7 0%, #fafbfc 60%, #e5e9f0 100%);
+            color: #1a1a1a;
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
         }
-        /* Custom scrollbar for beautiful chat box */
+        /* Custom scrollbar for chat stream */
         .chat-scroll::-webkit-scrollbar {
             width: 4px;
         }
@@ -29,206 +29,135 @@
             background: transparent;
         }
         .chat-scroll::-webkit-scrollbar-thumb {
-            background: #e1e1e6;
+            background: #dcdce0;
             border-radius: 10px;
         }
         .chat-scroll::-webkit-scrollbar-thumb:hover {
-            background: #cdd1da;
-        }
-        /* Glassmorphism details */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
+            background: #c3c3ca;
         }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <!-- Top Premium Notification & Custom Header Area -->
-    <div id="page-header" class="bg-white/70 backdrop-blur-md border-b border-neutral-200/60 transition-all duration-500 max-h-32 opacity-100 overflow-hidden shrink-0">
-        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-            <!-- App Logo with Subtle Text Gradient -->
-            <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#0084ff] to-[#1877f2] flex items-center justify-center text-white text-xs font-black shadow-sm">
-                    BS
-                </div>
-                <div>
-                    <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-neutral-950 via-neutral-800 to-neutral-600 bg-clip-text text-transparent">
-                        BhashaSetu
-                    </h1>
-                    <p class="text-[10px] text-neutral-400 font-medium tracking-wide">Universal real-time DM platform</p>
-                </div>
-            </div>
-
-            <!-- Page Meta Info & Help -->
-            <div class="text-right hidden sm:block">
-                <p class="text-[11px] font-semibold text-neutral-700">Duniya ki koi bhi language</p>
-                <p class="text-[10px] text-neutral-400">Real-time translations without losing original essence</p>
-            </div>
+    <!-- Super Thin & Minimal Top Navigation (0% Waste Space) -->
+    <header class="h-12 bg-white/70 backdrop-blur-md border-b border-neutral-200/50 flex items-center justify-between px-4 shrink-0 z-40">
+        <!-- Minimal Title -->
+        <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-xs tracking-tight bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-transparent">BhashaSetu 🌐</span>
         </div>
-    </div>
 
-    <!-- Main Workspace Area -->
-    <main class="flex-grow max-w-4xl w-full mx-auto flex flex-col px-4 py-4 md:py-6 overflow-hidden">
+        <!-- Compact Actions -->
+        <div class="flex items-center gap-2">
+            <!-- Dynamic Sync indicator -->
+            <span class="text-[9px] text-neutral-400 font-medium font-mono hidden sm:inline" id="countdown-indicator">
+                Syncing in <span id="seconds-left">5</span>s
+            </span>
+            <!-- Simple refresh -->
+            <button id="manual-refresh-btn" class="text-neutral-400 hover:text-neutral-800 p-1.5 rounded transition-colors" title="Force Sync Feed">
+                <i class="fa-solid fa-rotate-right text-[10px]"></i>
+            </button>
+            <!-- Minimal Language Button -->
+            <button id="open-lang-modal-btn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[10px] font-bold px-3 py-1 rounded-full transition-all flex items-center gap-1">
+                <span id="current-lang-text">English (en)</span>
+                <i class="fa-solid fa-chevron-down text-[7px] opacity-50"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Chat Feed (Takes 100% Remaining Screen Space) -->
+    <main class="flex-grow relative overflow-hidden flex justify-center w-full">
         
-        <!-- Controls & Floating Toggles Bar -->
-        <div class="flex items-center justify-between px-2 mb-3 shrink-0">
-            <!-- Left Side: Dynamic Status Badge -->
-            <div class="flex items-center gap-2">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span class="text-[10px] font-bold tracking-wider text-neutral-500 uppercase">Live Global DM Thread</span>
-            </div>
-
-            <!-- Right Side: Minimal Action Toggles (Toggle Header, Refresh) -->
-            <div class="flex items-center gap-3">
-                <!-- Sync indicator -->
-                <span class="text-[10px] text-neutral-400 hidden sm:inline">Syncing in <strong id="seconds-left" class="text-neutral-700">5</strong>s</span>
-                
-                <!-- Toggle Header Button (DIL KHUSH OPTION) -->
-                <button id="toggle-header-btn" class="text-[11px] font-semibold text-neutral-500 hover:text-neutral-900 bg-white border border-neutral-200 hover:border-neutral-300 px-3 py-1.5 rounded-full shadow-xs flex items-center gap-1.5 transition-all">
-                    <i id="toggle-header-icon" class="fa-solid fa-eye-slash text-[10px]"></i>
-                    <span id="toggle-header-text">Hide Header</span>
-                </button>
-
-                <!-- Change Chat Language Button -->
-                <button id="open-lang-modal-btn" class="bg-gradient-to-r from-neutral-900 to-neutral-800 hover:from-neutral-800 hover:to-neutral-700 text-white text-[11px] font-bold px-4 py-1.5 rounded-full shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
-                    <i class="fa-solid fa-language text-xs text-neutral-300"></i>
-                    <span id="current-lang-text">English (en)</span>
-                </button>
+        <!-- Chat Thread (Single continuous column) -->
+        <div id="messages-container" class="w-full max-w-2xl h-full overflow-y-auto chat-scroll px-4 pt-4 pb-28 space-y-4">
+            <!-- Loaded bubbles inserted dynamically -->
+            <div class="flex flex-col items-center justify-center h-full text-neutral-400 space-y-2">
+                <i class="fa-solid fa-circle-notch animate-spin text-lg text-neutral-300"></i>
+                <p class="text-[10px] font-medium tracking-wide">Syncing chat room...</p>
             </div>
         </div>
 
-        <!-- Master Chat Box (iOS/Instagram Luxury Glassmorphism card) -->
-        <div class="flex-grow flex flex-col glass-panel rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-white/80 overflow-hidden">
+        <!-- Floating, Transparent, Glassmorphic Send Bar (Only 50% width on Desktop, centered) -->
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 w-[92%] sm:w-[75%] md:w-[55%] lg:w-[42%] max-w-md bg-white/70 backdrop-blur-md border border-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full px-2 py-1.5 flex items-center gap-2">
             
-            <!-- Chat Inside Header -->
-            <div class="bg-white/40 border-b border-neutral-200/50 px-5 py-3 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-3">
-                    <!-- Circular Icon -->
-                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#00c6ff] to-[#0072ff] flex items-center justify-center text-white text-sm font-bold shadow-xs">
-                        <i class="fa-solid fa-comments text-xs"></i>
-                    </div>
-                    <div>
-                        <div class="text-xs font-bold text-neutral-800">Global Chat Area</div>
-                        <div class="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider">No account required • Anyone can post</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button id="manual-refresh-btn" class="text-neutral-400 hover:text-neutral-800 p-2 rounded-lg transition-colors" title="Force Sync Feed">
-                        <i class="fa-solid fa-rotate-right text-xs"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Chat Stream Thread (Clean minimalist background) -->
-            <div id="messages-container" class="flex-grow overflow-y-auto chat-scroll bg-gradient-to-b from-[#f9fafb] to-[#f3f4f6] px-5 py-6 space-y-5">
-                <!-- Loaded bubbles inserted dynamically -->
-                <div class="flex flex-col items-center justify-center h-full text-neutral-400 space-y-2">
-                    <i class="fa-solid fa-circle-notch animate-spin text-xl text-neutral-300"></i>
-                    <p class="text-[11px] font-medium tracking-wide">Syncing universal server stream...</p>
-                </div>
-            </div>
-
-            <!-- Chat Sticky Footer (Instagram styled luxury bar) -->
-            <div class="bg-white/80 border-t border-neutral-200/50 p-4 shrink-0">
-                <form id="message-form" class="max-w-3xl mx-auto flex items-center gap-3">
-                    
-                    <!-- Premium Identity Selector -->
-                    <button type="button" id="shuffle-identity-btn" class="flex items-center gap-2 px-3.5 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/60 rounded-full transition-all shrink-0 group shadow-xs" title="Shuffle identity">
-                        <span id="avatar-preview" class="text-xs">🦁</span>
-                        <span id="sender-display" class="text-[11px] font-bold text-neutral-600 hidden sm:inline">Toofani Panda</span>
-                        <i class="fa-solid fa-dice text-[11px] text-neutral-400 group-hover:text-neutral-600 transition-colors"></i>
-                    </button>
-                    
-                    <!-- Hidden credentials -->
-                    <input type="hidden" id="post-avatar" value="🦁">
-                    <input type="hidden" id="post-sender" value="🦁 Anonymous">
-
-                    <!-- Chat Message Input -->
-                    <div class="flex-grow relative flex items-center">
-                        <input type="text" id="post-text" required autocomplete="off" 
-                               class="w-full bg-neutral-50 focus:bg-white text-xs text-neutral-800 pl-4.5 pr-12 py-3 rounded-full border border-neutral-200/80 focus:border-neutral-400 focus:outline-none transition-all placeholder:text-neutral-400 shadow-xs" 
-                               placeholder="Type message in your own language (Hindi, French, Spanish, Arabic, etc.)...">
-                               
-                        <!-- Instagram circular blue gradient send button -->
-                        <button type="submit" id="submit-btn" 
-                                class="absolute right-1.5 w-8 h-8 rounded-full bg-gradient-to-tr from-[#0084ff] to-[#1877f2] hover:shadow-md hover:shadow-[#0084ff]/10 text-white flex items-center justify-center transition-all duration-150 active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-paper-plane text-[10px]"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
+            <!-- Quick Identity Changer -->
+            <button type="button" id="shuffle-identity-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100/80 hover:bg-neutral-200/80 border border-neutral-200/30 rounded-full transition-all shrink-0 shadow-xs" title="Tap to shuffle identity">
+                <span id="avatar-preview" class="text-xs">🦁</span>
+                <span id="sender-display" class="text-[10px] font-bold text-neutral-600 hidden sm:inline">Toofani Panda</span>
+                <i class="fa-solid fa-dice text-[9px] text-neutral-400"></i>
+            </button>
             
+            <!-- Hidden inputs -->
+            <input type="hidden" id="post-avatar" value="🦁">
+            <input type="hidden" id="post-sender" value="🦁 Anonymous">
+
+            <!-- Message Form Input -->
+            <form id="message-form" class="flex-grow flex items-center gap-2">
+                <input type="text" id="post-text" required autocomplete="off" 
+                       class="w-full bg-transparent text-xs text-neutral-800 pl-1.5 pr-2 py-1.5 focus:outline-none placeholder:text-neutral-400 font-medium" 
+                       placeholder="Type message in any language...">
+                       
+                <!-- Send circle button -->
+                <button type="submit" id="submit-btn" 
+                        class="w-8 h-8 rounded-full bg-gradient-to-tr from-[#0084ff] to-[#1877f2] hover:shadow-md hover:shadow-[#0084ff]/10 text-white flex items-center justify-center transition-all duration-150 active:scale-95 shrink-0 shadow-sm">
+                    <i class="fa-solid fa-paper-plane text-[9px]"></i>
+                </button>
+            </form>
         </div>
+
     </main>
 
     <!-- Language Selector Popup Modal -->
-    <div id="lang-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs hidden transition-all duration-200 opacity-0">
+    <div id="lang-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-xs hidden transition-all duration-200 opacity-0">
         <!-- Modal Card -->
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh] border border-neutral-200 transform scale-95 transition-transform duration-200">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[70vh] border border-neutral-200 transform scale-95 transition-transform duration-200">
             <!-- Header -->
-            <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between shrink-0">
+            <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between shrink-0">
                 <div>
-                    <h3 class="text-xs font-bold text-neutral-800">Select Board Language</h3>
-                    <p class="text-[9px] text-neutral-400 font-medium">Messages translate instantly to this target language.</p>
+                    <h3 class="text-xs font-bold text-neutral-800">Select Chat Language</h3>
                 </div>
-                <button id="close-lang-modal-btn" class="text-[10px] text-neutral-500 hover:text-neutral-900 font-bold bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-all">
+                <button id="close-lang-modal-btn" class="text-[9px] text-neutral-500 hover:text-neutral-900 font-bold bg-neutral-100 hover:bg-neutral-200 px-2.5 py-1 rounded-full transition-all">
                     Dismiss
                 </button>
             </div>
 
             <!-- Search Area with AI Suggestion -->
-            <div class="p-4 border-b border-neutral-100 bg-[#f9fafb]">
+            <div class="p-3 border-b border-neutral-100 bg-[#f9fafb]">
                 <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-xs"></i>
-                    <input type="text" id="lang-search-input" class="w-full bg-white text-xs text-neutral-800 pl-9 pr-4 py-2.5 rounded-full border border-neutral-200 focus:border-neutral-300 focus:outline-none transition-all" placeholder="Search language name or write text to auto-detect...">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px]"></i>
+                    <input type="text" id="lang-search-input" class="w-full bg-white text-[11px] text-neutral-800 pl-8 pr-3 py-2 rounded-full border border-neutral-200 focus:border-neutral-300 focus:outline-none transition-all" placeholder="Search language or type greeting (e.g. 'Bonjour')...">
                 </div>
                 
                 <!-- AI Smart suggestions box -->
-                <div id="ai-suggestion-box" class="mt-2.5 hidden">
-                    <div class="text-[9px] text-[#0084ff] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i> AI Suggested Bhasha:
+                <div id="ai-suggestion-box" class="mt-2 hidden">
+                    <div class="text-[8px] text-[#0084ff] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggested:
                     </div>
-                    <div id="ai-suggestion-list" class="flex flex-wrap gap-1.5">
-                        <!-- AI suggestions injected -->
+                    <div id="ai-suggestion-list" class="flex flex-wrap gap-1">
+                        <!-- Dynamic suggestions -->
                     </div>
                 </div>
             </div>
 
             <!-- Languages List -->
-            <div class="p-4 overflow-y-auto chat-scroll flex-grow space-y-4 bg-white">
+            <div class="p-3 overflow-y-auto chat-scroll flex-grow space-y-3 bg-white">
                 <!-- Popular -->
                 <div>
-                    <h4 class="text-[9px] text-neutral-400 uppercase tracking-wider font-bold mb-2">Popular Languages</h4>
-                    <div class="grid grid-cols-2 gap-1.5" id="popular-languages-grid">
+                    <h4 class="text-[8px] text-neutral-400 uppercase tracking-wider font-bold mb-1.5">Popular</h4>
+                    <div class="grid grid-cols-2 gap-1" id="popular-languages-grid">
                         <!-- Popular buttons inserted -->
                     </div>
                 </div>
 
                 <!-- All Languages -->
                 <div>
-                    <h4 class="text-[9px] text-neutral-400 uppercase tracking-wider font-bold mb-2" id="all-langs-header">All Languages</h4>
-                    <div class="grid grid-cols-2 gap-1.5" id="all-languages-grid">
+                    <h4 class="text-[8px] text-neutral-400 uppercase tracking-wider font-bold mb-1.5" id="all-langs-header">All Languages</h4>
+                    <div class="grid grid-cols-2 gap-1" id="all-languages-grid">
                         <!-- All languages buttons inserted -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Elegant Muted Footer -->
-    <footer id="page-footer" class="border-t border-neutral-200/50 bg-white/40 py-4 text-center text-[10px] text-neutral-400 transition-all duration-500 max-h-16 opacity-100 shrink-0">
-        <div class="max-w-4xl mx-auto px-6 flex items-center justify-between">
-            <p>© 2026 BhashaSetu. Free multi-lingual DM room.</p>
-            <p>Designed for absolute simplicity and modern speed.</p>
-        </div>
-    </footer>
 
     <!-- JavaScript Logic -->
     <script>
@@ -239,21 +168,14 @@
         let messagesData = [];
         let refreshTimer = null;
         let timeLeft = 5;
-        let headerVisible = localStorage.getItem("headerVisible") !== "false";
 
-        // Unique Chat User Identity lists
+        // Custom Unique Chat User Identity lists
         const avatars = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
         const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast", "Dhakad", "Chalaak", "Shanti", "Gabru", "Naughty", "Shana", "Smart", "Cool"];
         const animals = ["Lion", "Panda", "Fox", "Frog", "Koala", "Monkey", "Unicorn", "Octopus", "Dinosaur", "Sloth", "Owl", "Peacock", "Dolphin"];
         const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
 
         // DOM elements
-        const pageHeader = document.getElementById("page-header");
-        const pageFooter = document.getElementById("page-footer");
-        const toggleHeaderBtn = document.getElementById("toggle-header-btn");
-        const toggleHeaderIcon = document.getElementById("toggle-header-icon");
-        const toggleHeaderText = document.getElementById("toggle-header-text");
-
         const openModalBtn = document.getElementById("open-lang-modal-btn");
         const closeModalBtn = document.getElementById("close-lang-modal-btn");
         const langModal = document.getElementById("lang-modal");
@@ -275,31 +197,6 @@
         const messagesContainer = document.getElementById("messages-container");
         const secondsLeftSpan = document.getElementById("seconds-left");
         const manualRefreshBtn = document.getElementById("manual-refresh-btn");
-
-        // Header Visibility toggler handler (DIL KHUSH OPTION)
-        function applyHeaderVisibility() {
-            if (headerVisible) {
-                pageHeader.classList.remove("max-h-0", "opacity-0", "py-0", "border-none");
-                pageHeader.classList.add("max-h-32", "opacity-100");
-                pageFooter.classList.remove("max-h-0", "opacity-0", "py-0", "border-none");
-                pageFooter.classList.add("max-h-16", "opacity-100");
-                toggleHeaderIcon.className = "fa-solid fa-eye-slash text-[10px]";
-                toggleHeaderText.textContent = "Hide Header";
-            } else {
-                pageHeader.classList.remove("max-h-32", "opacity-100");
-                pageHeader.classList.add("max-h-0", "opacity-0", "py-0", "border-none");
-                pageFooter.classList.remove("max-h-16", "opacity-100");
-                pageFooter.classList.add("max-h-0", "opacity-0", "py-0", "border-none");
-                toggleHeaderIcon.className = "fa-solid fa-eye text-[10px]";
-                toggleHeaderText.textContent = "Show Header";
-            }
-            localStorage.setItem("headerVisible", headerVisible);
-        }
-
-        toggleHeaderBtn.addEventListener("click", () => {
-            headerVisible = !headerVisible;
-            applyHeaderVisibility();
-        });
 
         // Set or load persistent user identity
         let currentSender = localStorage.getItem("chatSenderName");
@@ -337,7 +234,7 @@
             setTimeout(() => shuffleIdentityBtn.classList.remove("scale-95"), 100);
         });
 
-        // Fetch languages
+        // Fetch languages list
         async function fetchLanguages() {
             try {
                 const res = await fetch("/api/languages");
@@ -360,7 +257,7 @@
             closeLanguageModal();
         }
 
-        // Render languages lists in modal
+        // Render lists inside modal
         function renderLanguages(filter = "") {
             const cleanFilter = filter.toLowerCase().trim();
             
@@ -376,14 +273,14 @@
                 const matches = name.toLowerCase().includes(cleanFilter) || code.toLowerCase().includes(cleanFilter);
                 
                 const btnStyle = isSelected
-                    ? "bg-neutral-900 text-white font-bold text-left text-[11px] px-3.5 py-2 rounded-full border border-neutral-900 flex justify-between"
-                    : "bg-[#f3f4f6] hover:bg-neutral-200/80 text-neutral-700 font-semibold text-left text-[11px] px-3.5 py-2 rounded-full border border-transparent transition-all flex justify-between";
+                    ? "bg-neutral-900 text-white font-bold text-left text-[10px] px-3 py-1.5 rounded-full border border-neutral-900 flex justify-between"
+                    : "bg-[#f3f4f6] hover:bg-neutral-200/80 text-neutral-700 font-semibold text-left text-[10px] px-3 py-1.5 rounded-full border border-transparent transition-all flex justify-between";
 
                 if (popularCodes.includes(code) && !cleanFilter) {
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = btnStyle;
-                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[9px]">${code}</span>`;
+                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[8px]">${code}</span>`;
                     btn.onclick = () => selectLanguage(code, name);
                     popularLangsGrid.appendChild(btn);
                 }
@@ -393,7 +290,7 @@
                     const btn = document.createElement("button");
                     btn.type = "button";
                     btn.className = btnStyle;
-                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[9px]">${code}</span>`;
+                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[8px]">${code}</span>`;
                     btn.onclick = () => selectLanguage(code, name);
                     allLangsGrid.appendChild(btn);
                 }
@@ -426,8 +323,8 @@
                     data.suggestions.forEach(s => {
                         const chip = document.createElement("button");
                         chip.type = "button";
-                        chip.className = "bg-[#0084ff]/10 hover:bg-[#0084ff] text-[#0084ff] hover:text-white border border-[#0084ff]/20 text-[10px] px-3.5 py-1 rounded-full transition-all active:scale-95 font-semibold flex items-center gap-1";
-                        chip.innerHTML = `<span>${s.name}</span> <span class="opacity-60 text-[8px] uppercase">${s.code}</span>`;
+                        chip.className = "bg-[#0084ff]/10 hover:bg-[#0084ff] text-[#0084ff] hover:text-white border border-[#0084ff]/20 text-[9px] px-2.5 py-0.5 rounded-full transition-all active:scale-95 font-semibold flex items-center gap-1";
+                        chip.innerHTML = `<span>${s.name}</span> <span class="opacity-60 text-[7px] uppercase">${s.code}</span>`;
                         chip.onclick = () => selectLanguage(s.code, s.name);
                         aiSuggestionList.appendChild(chip);
                     });
@@ -511,7 +408,7 @@
             }, 100);
         }
 
-        // Render clean premium chat bubbles (WhatsApp / Instagram Direct Messages style)
+        // Render clean premium chat bubbles with enlarged text (WhatsApp / Instagram Direct Messages style)
         function renderMessages() {
             if (messagesData.length === 0) {
                 messagesContainer.innerHTML = `
@@ -531,13 +428,12 @@
                 const isOriginal = msg.original_lang === selectedLanguage;
                 
                 const bubbleRow = document.createElement("div");
-                bubbleRow.className = `flex flex-col w-full ${isMe ? 'items-end' : 'items-start'} space-y-1.5`;
+                bubbleRow.className = `flex flex-col w-full ${isMe ? 'items-end' : 'items-start'} space-y-1`;
 
-                // Me: Indigo/Blue Gradient Bubble (iOS DM Style)
-                // Other: Light Gray Bubble
+                // Beautiful, enlarged modern text size (text-[15px]) with good line-height
                 const bubbleStyle = isMe
-                    ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs shadow-xs font-medium"
-                    : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-xs shadow-xs font-medium border border-neutral-200/50";
+                    ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] shadow-xs font-medium leading-relaxed"
+                    : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] shadow-xs font-medium border border-neutral-200/50 leading-relaxed";
 
                 let metaString = "";
                 if (!isOriginal) {
@@ -552,16 +448,16 @@
 
                 bubbleRow.innerHTML = `
                     <!-- Sender Name -->
-                    ${!isMe ? `<span class="text-[10px] font-bold text-neutral-500 ml-1.5 flex items-center gap-1">${msg.sender}</span>` : ''}
+                    ${!isMe ? `<span class="text-[9px] font-bold text-neutral-400 ml-1.5 flex items-center gap-1">${msg.sender}</span>` : ''}
                     
                     <!-- Message Bubble Body -->
-                    <div class="max-w-[75%] md:max-w-[65%] flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                        <div class="${bubbleStyle} leading-relaxed break-words w-full">
+                    <div class="max-w-[80%] md:max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="${bubbleStyle} break-words w-full">
                             ${msg.translated_text}
                         </div>
                         
                         <!-- Mini Bubble Footer -->
-                        <div class="flex items-center gap-1.5 mt-1.5 px-1.5 text-[9px] text-neutral-400 font-medium">
+                        <div class="flex items-center gap-1.5 mt-1 px-1.5 text-[9px] text-neutral-400 font-medium">
                             <span>${msg.timestamp.split(" ")[1].substring(0, 5)}</span>
                             <span>•</span>
                             <span>${metaString}</span>
@@ -570,7 +466,7 @@
 
                         <!-- Expandable Original box -->
                         ${!isOriginal ? `
-                            <div id="box-orig-${msg.id}" class="hidden mt-2 border-l-2 border-neutral-300 pl-2.5 py-0.5 text-[10px] text-neutral-400 italic">
+                            <div id="box-orig-${msg.id}" class="hidden mt-1.5 border-l-2 border-neutral-300 pl-2.5 py-0.5 text-[10px] text-neutral-400 italic">
                                 Original: "${msg.original_text}"
                             </div>
                         ` : ''}
@@ -606,7 +502,7 @@
             
             const submitBtn = document.getElementById("submit-btn");
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-[10px]"></i>`;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-[9px]"></i>`;
             
             try {
                 const response = await fetch("/api/messages", {
@@ -627,7 +523,7 @@
                 alert("Deliver error. Ensure connection.");
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-[10px]"></i>`;
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-[9px]"></i>`;
             }
         });
 
@@ -659,7 +555,6 @@
         (async function init() {
             currentLangText.textContent = selectedLanguageName;
             
-            applyHeaderVisibility();
             await fetchLanguages();
             await fetchMessages(true); // Initial load scroll to bottom
             startAutoRefreshTimer();
