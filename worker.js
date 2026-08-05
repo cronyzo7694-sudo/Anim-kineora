@@ -1,5 +1,5 @@
 /**
- * Batiyan Cloudflare Worker v3.7
+ * Batiyan Cloudflare Worker v3.9
  * Fixes broken live core: working languages API, working POST messages,
  * real WebSocket `/ws`, ACK flow, Durable Object room storage and translation fallback.
  */
@@ -27,7 +27,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: JSON_HEADERS });
 
     if (url.pathname === "/health") {
-      return Response.json({ ok: true, app: "Batiyan", version: "3.7", now: new Date().toISOString() }, { headers: JSON_HEADERS });
+      return Response.json({ ok: true, app: "Batiyan", version: "3.9", now: new Date().toISOString() }, { headers: JSON_HEADERS });
     }
 
     if (url.pathname === "/api/languages") {
@@ -503,9 +503,51 @@ function suggestLanguages(q) {
   return [...new Map(out.map(x => [x.code, x])).values()].slice(0, 6);
 }
 
+function isLikelyHinglish(text) {
+  const t = String(text || "").toLowerCase();
+  // If native Devanagari is present, it is definitely Hindi-like.
+  if (/[\u0900-\u097F]/.test(text)) return true;
+  if (/[\u0600-\u06FF\u0400-\u04FF\u3040-\u30ff\u4E00-\u9FFF]/.test(text)) return false;
+
+  const words = t.match(/[a-z]+/g) || [];
+  if (!words.length) return false;
+
+  const hinglishWords = new Set([
+    "aap","ap","ab","abhi","acha","accha","achha","badiya","badhiya","bahut","bohot","bhai","behen","dost","yaar","kya","kyu","kyun","kaise","kaisa","kaisi","kese","kesa","kaun","kab","kaha","kahan","kidhar","idhar","udhar","hai","hain","hu","hun","ho","tha","thi","the","hoga","hogi","honge","kar","karna","karta","karti","karte","karunga","karungi","raha","rahi","rahe","chal","chala","chale","mat","nahi","nahin","na","haan","ha","ji","mujhe","muje","tum","tumhe","tujhe","tu","tera","teri","mere","mera","meri","ham","hum","sab","kuch","kuchh","isko","ise","usse","usko","ye","yeh","vo","woh","bhi","bas","sirf","fir","phir","lekin","par","aur","or","se","ko","ka","ki","ke","me","mein","mai","main","liye","liye","wala","wali","wale","chahiye","chahie","samajh","samjh","dekh","sun","bol","bata","banao","bana","bigadna","theek","thik","mast","sahi","galat","jaldi","turant","pahle","pehle","baad","saath","sath","log","logo","duniya","bhasha","language"
+  ]);
+
+  let score = 0;
+  for (const w of words) {
+    if (hinglishWords.has(w)) score += 2;
+    if (/(na|hai|kar|karo|raha|rahi|wale|wala|wali)$/.test(w)) score += 0.35;
+  }
+
+  // Common multi-word Hinglish phrases.
+  if (/\b(kya|kaise|kese|mujhe|muje|tumhe|tujhe|abhi|bhai|yaar|mat|nahi|chahiye|kar raha|kar rahi|chal raha|theek hai|sahi hai)\b/.test(t)) score += 2;
+
+  const ratio = score / Math.max(words.length, 1);
+  return score >= 3.2 && ratio >= 0.45;
+}
+
+function normalizeHinglishForTranslation(text) {
+  let t = String(text || "").trim();
+  // Help machine translation understand phrase boundaries in Roman Hindi.
+  t = t.replace(/\b(ise|isko|isse|usko|usse|use)\s+mat\b/gi, ", $1 mat");
+  t = t.replace(/\b(aur|or)\s+(ha|haan|yes)\b/gi, ", aur haan");
+  t = t.replace(/\b(nahi|nahin)\b/gi, "nahi");
+  t = t.replace(/\b(kese|kesa)\b/gi, "kaise");
+  t = t.replace(/\b(accha|achha)\b/gi, "acha");
+  // Prevent Google from reading "english samajh" as "English society".
+  t = t.replace(/\bko\s+(english|hindi|spanish|french|language)\s+samajh\s+raha\s+hai\b/gi, "ko $1 ke roop me samajh raha hai");
+  t = t.replace(/\bko\s+(english|hindi|spanish|french|language)\s+samjh\s+raha\s+hai\b/gi, "ko $1 ke roop me samajh raha hai");
+  t = t.replace(/\b(h)\b/gi, "hai");
+  t = t.replace(/\s+/g, " ").trim();
+  return t;
+}
+
 function detectLanguage(text) {
   const t = String(text || "").toLowerCase();
-  if (/[\u0900-\u097F]/.test(text) || /\b(namaste|namaskar|kaise|kya|hai|bhai)\b/.test(t)) return { code: "hi", name: "Hindi" };
+  if (isLikelyHinglish(text)) return { code: "hi", name: /[\u0900-\u097F]/.test(text) ? "Hindi" : "Hindi (Hinglish)" };
   if (/[\u0600-\u06FF]/.test(text)) return { code: "ar", name: "Arabic" };
   if (/[\u3040-\u30ff]/.test(text)) return { code: "ja", name: "Japanese" };
   if (/[\u4E00-\u9FFF]/.test(text)) return { code: "zh-CN", name: "Chinese (simplified)" };
@@ -516,12 +558,26 @@ function detectLanguage(text) {
 }
 
 async function translateText(text, sourceLang, targetLang) {
-  if (!text || sourceLang === targetLang) return text;
+  if (!text) return text;
 
-  // Provider 1: Google public endpoint. Use sl=auto because lightweight local detection
-  // can mis-detect Hinglish/Roman Hindi and then Google may refuse bad source codes.
+  const hinglish = isLikelyHinglish(text);
+  const normalizedHinglish = hinglish ? normalizeHinglishForTranslation(text) : text;
+
+  // If source and target are same Hindi, keep original Hinglish as user wrote it.
+  // For other target languages, force Hindi-source translation first so Roman Hindi
+  // is not treated as English.
+  if (sourceLang === targetLang) return text;
+
+  if ((hinglish || sourceLang === "hi") && targetLang !== "hi") {
+    try {
+      const translated = await googleTranslate(normalizedHinglish, "hi", targetLang, 3200);
+      if (isGoodTranslation(translated, normalizedHinglish) && translated.trim().toLowerCase() !== normalizedHinglish.trim().toLowerCase()) return translated;
+    } catch (_) {}
+  }
+
+  // Provider 1: Google public endpoint. Use sl=auto for regular multilingual text.
   try {
-    const translated = await googleTranslate(text, "auto", targetLang, 3200);
+    const translated = await googleTranslate(hinglish ? normalizedHinglish : text, "auto", targetLang, 3200);
     if (isGoodTranslation(translated, text)) return translated;
   } catch (_) {}
 
