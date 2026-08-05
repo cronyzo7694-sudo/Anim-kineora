@@ -51,7 +51,6 @@ io_lock = asyncio.Lock()
 
 async def async_save_messages():
     async with io_lock:
-        # Atomic write pattern to prevent corruption
         temp_file = MESSAGES_FILE + ".tmp"
         with open(temp_file, "w", encoding="utf-8") as f:
             json.dump(messages, f, ensure_ascii=False, indent=2)
@@ -190,15 +189,21 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ========================================================
-# ⚙️ BACKGROUND ASYNC TRANSLATION PIPELINE
+// 🛡️ DYNAMIC BACKGROUND ASYNC TRANSLATION PIPELINE
 # ========================================================
 async def background_translation_worker(msg_id, original_text, original_lang):
     """
-    Async background worker that translates a new post into popular languages immediately.
+    Async background worker that translates a new post into popular AND active languages.
     Triggers client broadcast patch event when finished so users get real-time translations!
     """
-    # Pre-populate cache for popular languages in the background
-    for code in CONFIG.popularCodes:
+    # 1. Collect all active languages read by currently online WebSocket users!
+    active_langs = {ws.selected_lang for ws in manager.active_connections if hasattr(ws, "selected_lang")}
+    
+    # 2. Merge with popular languages so pre-caching remains active
+    popular_codes_set = {"hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"}
+    target_languages = popular_codes_set.union(active_langs)
+    
+    for code in target_languages:
         if code == original_lang:
             continue
             
@@ -348,23 +353,33 @@ def suggest_language(q: str = Query("")):
 @app.get("/api/messages")
 async def get_messages(lang: str = "en"):
     """
-    HTTP REST Fallback endpoint for message syncing.
+    HTTP REST Sync endpoint. Dynamically translates missing messages on-the-fly inside ThreadPool!
     """
     if lang not in LANG_CODE_TO_NAME:
         lang = "en"
         
     response_messages = []
+    futures = []
     
+    # Submit translation requests in parallel using ThreadPoolExecutor for 0ms server latency feeling
     for msg in messages:
         msg_id = msg["id"]
+        text = msg["text"]
         orig_lang = msg["original_lang"]
         
-        # Pull from translations cache or fall back to original
-        translated_text = msg["text"]
-        if lang == orig_lang:
+        future = executor.submit(translate_single_message, msg_id, text, orig_lang, lang)
+        futures.append((msg, future))
+        
+    cache_updated = False
+    for msg, future in futures:
+        try:
+            translated_text = future.result()
+        except Exception:
             translated_text = msg["text"]
-        elif msg_id in translations_cache and lang in translations_cache[msg_id]:
-            translated_text = translations_cache[msg_id][lang]
+            
+        msg_id = msg["id"]
+        if msg_id in translations_cache and lang in translations_cache[msg_id]:
+            cache_updated = True
             
         response_messages.append({
             "id": msg_id,
@@ -377,6 +392,9 @@ async def get_messages(lang: str = "en"):
             "timestamp": msg["timestamp"],
             "sequenceNumber": msg.get("sequenceNumber", 0)
         })
+        
+    if cache_updated:
+        await async_save_translations()
         
     return {"messages": response_messages, "current_language": LANG_CODE_TO_NAME[lang]}
 
@@ -427,6 +445,10 @@ async def websocket_endpoint(websocket: WebSocket):
             # A. Connection Initial Sync / Reconnect Resume handshake
             if packet_type == "CONNECT":
                 last_sequence = packet.get("lastSequence", 0)
+                selected_lang = packet.get("lang", "en")
+                
+                # Associate active reading language with this active connection!
+                websocket.selected_lang = selected_lang
                 
                 # Check for missed messages since their last sequence number (Sequence Recovery)
                 missed_messages = [msg for msg in messages if msg.get("sequenceNumber", 0) > last_sequence]
@@ -434,7 +456,14 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Replay missed messages to this socket instantly! (Zero message loss recovery)
                 for msg in missed_messages:
                     orig_lang = msg["original_lang"]
-                    # We can't know their selected language on handshake yet, so client will request translations or we can send original
+                    
+                    # Pull from translation cache if exists, otherwise send original (client will request translation)
+                    translated_text = msg["text"]
+                    if selected_lang == orig_lang:
+                        translated_text = msg["text"]
+                    elif msg["id"] in translations_cache and selected_lang in translations_cache[msg["id"]]:
+                        translated_text = translations_cache[msg["id"]][selected_lang]
+
                     await websocket.send_json({
                         "type": "NEW_MESSAGE",
                         "message": {
@@ -444,7 +473,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             "original_text": msg["text"],
                             "original_lang": msg["original_lang"],
                             "original_lang_name": msg["original_lang_name"],
-                            "translated_text": msg["text"],
+                            "translated_text": translated_text,
                             "timestamp": msg["timestamp"],
                             "sequenceNumber": msg["sequenceNumber"]
                         }
@@ -506,6 +535,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         "clientMessageId": client_id,
                         "detail": "Internal server error"
                     })
+
+            # C. Real-Time Language Change tracker
+            elif packet_type == "CHANGE_LANGUAGE":
+                selected_lang = packet.get("lang", "en")
+                websocket.selected_lang = selected_lang
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)

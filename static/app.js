@@ -1,8 +1,8 @@
 /**
  * ========================================================
- * BhashaSetu — Baap-Level Enterprise-Grade Chat Client
+ * BhashaSetu — Immersive Gamified Chat Application
  * Production-ready Vanilla JS ES6 with SWR & Sequence Recovery
- * Conforms to elite distributed architectural guidelines
+ * Arch-Certified Quality conforming to strict guidelines
  * ========================================================
  */
 
@@ -182,7 +182,7 @@ function playFireRoarSound() {
         
         let lastOut = 0.0;
         for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * WhiteNoiseMultiplier();
+            const white = Math.random() * 2 - 1;
             data[i] = (lastOut + (0.02 * white)) / 1.02;
             lastOut = data[i];
             data[i] *= 4.5;
@@ -205,7 +205,6 @@ function playFireRoarSound() {
         noise.start();
     } catch(e) {}
 }
-function WhiteNoiseMultiplier() { return 2 - 1; }
 
 // ========================================================
 // 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
@@ -431,7 +430,6 @@ class RealtimeConnectionManager {
     getWsUrl() {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const host = window.location.host;
-        // Check if inside E2B container proxy url
         if (host.includes("e2b.app")) {
             return `${protocol}//8000-${host.split("-")[1]}/ws`;
         }
@@ -452,16 +450,14 @@ class RealtimeConnectionManager {
             STATE.connectionMode = "websocket";
             this.reconnectAttempts = 0;
             
-            // 1. Send Handshake CONNECT package with sequence number!
+            // 1. Send Handshake CONNECT package with sequence number and active language!
             this.socket.send(JSON.stringify({
                 type: "CONNECT",
-                lastSequence: STATE.lastSequence
+                lastSequence: STATE.lastSequence,
+                lang: STATE.selectedLanguage
             }));
             
-            // 2. Start heartbeats
             this.startHeartbeat();
-            
-            // 3. Retry sending any offline queued messages automatically!
             this.drainDurablePendingQueue();
         };
 
@@ -504,7 +500,6 @@ class RealtimeConnectionManager {
         STATE.connectionMode = "offline";
         setConnectionStatus("offline");
         
-        // Exponential backoff reconnect
         const delay = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, this.maxReconnectDelay);
         this.reconnectAttempts++;
         setTimeout(() => {
@@ -518,19 +513,16 @@ class RealtimeConnectionManager {
         if (type === "NEW_MESSAGE") {
             const msg = packet.message;
             
-            // Update sequence tracker safely
             if (msg.sequenceNumber > STATE.lastSequence) {
                 STATE.lastSequence = msg.sequenceNumber;
                 DurableStore.setLastSequence(msg.sequenceNumber);
             }
 
-            // Verify if message already in our feed (idempotency check)
             const exists = STATE.messagesData.some(m => m.id === msg.id || (m.clientMessageId && m.clientMessageId === msg.clientMessageId));
             if (!exists) {
                 STATE.messagesData.push(msg);
                 renderSingleMessageBubble(msg, true);
                 
-                // If user is scrolled up, count unread messages
                 if (!STATE.isUserAtBottom) {
                     STATE.unreadCount++;
                     DOM.newMessagesDock.querySelector("span").textContent = `${STATE.unreadCount} New Messages`;
@@ -546,7 +538,6 @@ class RealtimeConnectionManager {
             const seqNum = packet.sequenceNumber;
             const time = packet.timestamp;
 
-            // Resolve optimistic pending bubble to Sent!
             const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId || m.id === clientMsgId);
             if (idx !== -1) {
                 STATE.messagesData[idx].id = realId;
@@ -555,7 +546,6 @@ class RealtimeConnectionManager {
                 STATE.messagesData[idx].isPending = false;
                 STATE.messagesData[idx].isFailed = false;
 
-                // Re-render specifically this single bubble
                 const tempBubbleRow = document.getElementById(`msg-row-${clientMsgId}`);
                 if (tempBubbleRow) tempBubbleRow.remove();
                 STATE.renderedMessageIds.delete(clientMsgId);
@@ -568,24 +558,20 @@ class RealtimeConnectionManager {
                 }
             }
             
-            // Remove from durable offline queue
             let queue = DurableStore.getPendingQueue();
             queue = queue.filter(item => item.clientMessageId !== clientMsgId);
             DurableStore.savePendingQueue(queue);
         }
         else if (type === "TRANSLATION_UPDATED") {
-            // Real-time asynchronous translation patch update!
             const msgId = packet.id;
             const targetLang = packet.targetLang;
             const translatedText = packet.translatedText;
 
-            // Update in our cache/memory directly
             const idx = STATE.messagesData.findIndex(m => m.id === msgId);
             if (idx !== -1) {
                 if (targetLang === STATE.selectedLanguage) {
                     STATE.messagesData[idx].translated_text = translatedText;
                     
-                    // Update text inside DOM instantly without redrawing the rest of the feed!
                     const textSpan = document.getElementById(`text-body-${msgId}`);
                     if (textSpan) {
                         textSpan.innerHTML = formatMessageText(translatedText);
@@ -617,7 +603,6 @@ class RealtimeConnectionManager {
             });
             
             if (!sent) {
-                // REST Fallback if WS went down during drain
                 try {
                     await fetch("/api/messages", {
                         method: "POST",
@@ -639,7 +624,6 @@ async function fetchMessages(forceScroll = false) {
     if (STATE.isSyncing) return;
     STATE.isSyncing = true;
     
-    // Load from local SWR language cache first (0ms instantaneous transition!)
     if (STATE.clientTranslationCache[STATE.selectedLanguage]) {
         STATE.messagesData = STATE.clientTranslationCache[STATE.selectedLanguage];
         if (STATE.renderedMessageIds.size === 0) {
@@ -655,7 +639,6 @@ async function fetchMessages(forceScroll = false) {
         
         const freshMessages = data.messages;
         
-        // Incremental insertion of newly received messages only
         let isNewInserted = false;
         freshMessages.forEach(newMsg => {
             const exists = STATE.messagesData.some(m => m.id === newMsg.id || (m.clientMessageId && m.clientMessageId === newMsg.clientMessageId));
@@ -705,7 +688,6 @@ async function sendChatMessage(text) {
     autoResizeInput();
     snapRocketBack();
     
-    // 1. Construct Optimistic Bubble object
     const optimisticMsg = {
         id: clientMsgId,
         clientMessageId: clientMsgId,
@@ -721,7 +703,6 @@ async function sendChatMessage(text) {
         isFailed: false
     };
     
-    // Append locally instantly (0ms)
     STATE.messagesData.push(optimisticMsg);
     renderSingleMessageBubble(optimisticMsg, true);
     
@@ -729,7 +710,6 @@ async function sendChatMessage(text) {
         scrollToBottom();
     }
 
-    // 2. Save inside persistent offline queue (Survives tab close/crashes!)
     const queue = DurableStore.getPendingQueue();
     queue.push({
         clientMessageId: clientMsgId,
@@ -739,7 +719,6 @@ async function sendChatMessage(text) {
     });
     DurableStore.savePendingQueue(queue);
 
-    // 3. Try delivering via high-performance WebSocket gateway
     const sent = RealtimeGateway.send({
         type: "SEND_MESSAGE",
         clientMessageId: clientMsgId,
@@ -749,7 +728,6 @@ async function sendChatMessage(text) {
     });
 
     if (!sent) {
-        // Fallback: If WebSocket is closed/blocked, use HTTP POST endpoint
         try {
             const response = await fetch("/api/messages", {
                 method: "POST",
@@ -765,7 +743,6 @@ async function sendChatMessage(text) {
             if (response.ok) {
                 const serverMsg = await response.json();
                 
-                // Update local memory and GUI
                 const idx = STATE.messagesData.findIndex(m => m.clientMessageId === clientMsgId);
                 if (idx !== -1) {
                     STATE.messagesData[idx].id = serverMsg.id;
@@ -786,7 +763,6 @@ async function sendChatMessage(text) {
                     }
                 }
                 
-                // Clear from offline queue
                 let q = DurableStore.getPendingQueue();
                 q = q.filter(item => item.clientMessageId !== clientMsgId);
                 DurableStore.savePendingQueue(q);
@@ -873,7 +849,7 @@ window.retryMessageDelivery = async function(clientMsgId, text) {
 };
 
 // ========================================================
-// 🔌 HEARTBEATS AND CONNECTION HUD GRAPHICS
+// 🔌 CONNECTION HUD GRAPHICS
 // ========================================================
 function setConnectionStatus(state) {
     if (state === "connected") {
@@ -935,16 +911,23 @@ function renderSingleMessageBubble(msg, animate = false) {
         ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
         : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
 
-    let metaString = isOriginal ? `Original: ${msg.original_lang_name}` : `Translated from ${msg.original_lang_name}`;
+    let metaString = "";
+    if (!isOriginal) {
+        metaString = `Translated from ${msg.original_lang_name}`;
+    } else {
+        metaString = `Original: ${msg.original_lang_name}`;
+    }
+
     const toggleBtnHtml = !isOriginal
         ? `<button onclick="toggleSingleBubbleTranslation('${msg.id}')" id="btn-trans-toggle-${msg.id}" class="translation-toggle-link">Show Original</button>`
         : '';
 
     const statusHtml = msg.isPending 
         ? `<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>`
-        : `<span>${msg.timestamp.includes(" ") ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>`;
+        : `<span>${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>`;
 
     row.innerHTML = `
+        <!-- Sender Name (ENLARGED, Font-ExtraBold) -->
         ${!isMe ? `
             <div class="message-header-row">
                 <span class="message-sender-avatar">${msg.avatar || "🦁"}</span>
@@ -1177,6 +1160,12 @@ function selectLanguage(code, name) {
     }
     
     DOM.currentLangText.textContent = name;
+
+    // Send language change event to active WebSocket so background translator prioritizes it!
+    RealtimeGateway.send({
+        type: "CHANGE_LANGUAGE",
+        lang: code
+    });
     
     // Clear and full redraw on explicit language selection
     renderAllMessagesFeed(true);
