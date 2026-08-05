@@ -306,7 +306,7 @@ async function handleRequest(request) {
 }
 
 // Embedded Static HTML (Fully customized, premium Sepia eye-care gradient UI)
-const HTML_CONTENT = \`
+const HTML_CONTENT = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -874,4 +874,4 @@ const HTML_CONTENT = \`
     </script>
 </body>
 </html>
-\`;
+`;
