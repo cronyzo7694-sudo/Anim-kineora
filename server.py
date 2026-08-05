@@ -11,7 +11,7 @@ from langdetect import detect
 from deep_translator import GoogleTranslator
 
 # Initialize FastAPI App
-app = FastAPI(title="Real-time Universal Multi-lingual Message Board")
+app = FastAPI(title="BhashaSetu — Universal Multi-lingual DM Messenger")
 
 # Directories for persistence
 DATA_DIR = "./data"
@@ -275,7 +275,7 @@ def get_messages(lang: str = "en"):
         
     return {"messages": response_messages, "current_language": LANG_CODE_TO_NAME[lang]}
 
-# Serve index.html directly from FastAPI
+# Serve core index.html file
 @app.get("/", response_class=HTMLResponse)
 def get_index():
     if os.path.exists("./static/index.html"):
@@ -283,7 +283,20 @@ def get_index():
             return f.read()
     return "<h3>Frontend index.html file not found in ./static</h3>"
 
-# Mount static folder for CSS, JS, Images
+# Explicit routes for static assets so they can be requested from root
+@app.get("/style.css")
+def get_css():
+    return FileResponse("./static/style.css", media_type="text/css")
+
+@app.get("/app.js")
+def get_js():
+    return FileResponse("./static/app.js", media_type="application/javascript")
+
+@app.get("/chat-pattern.svg")
+def get_svg():
+    return FileResponse("./static/chat-pattern.svg", media_type="image/svg+xml")
+
+# Mount static folder for fallback/other assets
 os.makedirs("./static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="./static"), name="static")
 
