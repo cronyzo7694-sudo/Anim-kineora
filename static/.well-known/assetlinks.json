@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.batiyan.android",
+        "sha256_cert_fingerprints": ["3F:1D:65:29:8D:99:93:AF:BD:FA:C1:5A:5F:AF:A6:CB:94:6C:B8:23:FF:77:3E:D6:C1:90:8C:C7:94:31:DA:D0"]
+      }
+    }]
