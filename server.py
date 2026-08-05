@@ -74,6 +74,15 @@ except Exception:
     }
 LANG_CODE_TO_NAME = {code: name.capitalize() for name, code in SUPPORTED_LANGUAGES.items()}
 
+# Normalize old/demo messages so sequence recovery and idempotency work after restart
+for idx, msg in enumerate(messages, start=1):
+    msg.setdefault("sequenceNumber", idx)
+    msg.setdefault("clientMessageId", msg.get("id", f"seed_{idx}"))
+    msg.setdefault("original_lang", "en")
+    msg.setdefault("original_lang_name", LANG_CODE_TO_NAME.get(msg.get("original_lang", "en"), "English"))
+if messages:
+    sequence_counter = max(msg.get("sequenceNumber", 0) for msg in messages)
+
 # Core Multilingual Greetings
 GREETING_LANGUAGE_MAP = {
     "namaste": "hi", "namaskar": "hi", "kya haal": "hi", "kaise ho": "hi", "hola": "es", "gracias": "es",
@@ -160,6 +169,17 @@ def smart_detect_language(text):
     except Exception:
         return "en"
 
+def translate_single_message(msg_id, original_text, original_lang, target_lang):
+    """ThreadPool-safe translation helper used by GET /api/messages."""
+    if not target_lang or target_lang == original_lang:
+        return original_text
+    if msg_id in translations_cache and target_lang in translations_cache[msg_id]:
+        return translations_cache[msg_id][target_lang]
+    translated, provider = perform_translation_cascade(original_text, target_lang)
+    if provider != "Failed_Fallback":
+        translations_cache.setdefault(msg_id, {})[target_lang] = translated
+    return translated or original_text
+
 # ========================================================
 # 🔌 DISTRIBUTED WEBSOCKET REAL-TIME CONNECTION MANAGER
 # ========================================================
@@ -189,7 +209,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ========================================================
-// 🛡️ DYNAMIC BACKGROUND ASYNC TRANSLATION PIPELINE
+# 🛡️ DYNAMIC BACKGROUND ASYNC TRANSLATION PIPELINE
 # ========================================================
 async def background_translation_worker(msg_id, original_text, original_lang):
     """
@@ -441,6 +461,10 @@ async def websocket_endpoint(websocket: WebSocket):
             data_str = await websocket.receive_text()
             packet = json.loads(data_str)
             packet_type = packet.get("type")
+
+            if packet_type == "PING":
+                await websocket.send_json({"type": "PONG", "now": datetime.datetime.now().timestamp()})
+                continue
 
             # A. Connection Initial Sync / Reconnect Resume handshake
             if packet_type == "CONNECT":

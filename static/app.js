@@ -8,7 +8,7 @@
 
 // Core App Configuration
 const CONFIG = {
-    syncInterval: 5000,     // 5s background poll fallback
+    syncInterval: 2500,     // 2.5s background poll fallback when WebSocket is unavailable
     maxMessagesCap: 150,
     popularCodes: ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"]
 };
@@ -430,10 +430,9 @@ class RealtimeConnectionManager {
     getWsUrl() {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const host = window.location.host;
-        if (host.includes("e2b.app")) {
-            return `${protocol}//8000-${host.split("-")[1]}/ws`;
-        }
-        return `${protocol}//${host}/ws`;
+        const room = encodeURIComponent("global");
+        const lang = encodeURIComponent(STATE.selectedLanguage || "en");
+        return `${protocol}//${host}/ws?room=${room}&lang=${lang}`;
     }
 
     connect() {
@@ -454,7 +453,9 @@ class RealtimeConnectionManager {
             this.socket.send(JSON.stringify({
                 type: "CONNECT",
                 lastSequence: STATE.lastSequence,
-                lang: STATE.selectedLanguage
+                lang: STATE.selectedLanguage,
+                roomId: "global",
+                sessionId: STATE.userNumberTag
             }));
             
             this.startHeartbeat();
@@ -637,7 +638,7 @@ async function fetchMessages(forceScroll = false) {
         const data = await res.json();
         setConnectionStatus("connected");
         
-        const freshMessages = data.messages;
+        const freshMessages = Array.isArray(data.messages) ? data.messages : [];
         
         let isNewInserted = false;
         freshMessages.forEach(newMsg => {
@@ -683,7 +684,7 @@ async function fetchMessages(forceScroll = false) {
 // 📩 SEND MESSAGE AND OFFLINE DURABLE QUEUE HANDLERS
 // ========================================================
 async function sendChatMessage(text) {
-    const clientMsgId = `cli_${Date.now()}`;
+    const clientMsgId = (window.crypto && crypto.randomUUID) ? `cli_${crypto.randomUUID()}` : `cli_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     DOM.postText.value = "";
     autoResizeInput();
     snapRocketBack();
