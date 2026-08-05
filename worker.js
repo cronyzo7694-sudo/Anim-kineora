@@ -1221,7 +1221,7 @@ let messagesData = [];
 let refreshTimer = null;
 let timeLeft = 5;
 
-// Client-Side Cache for 0ms transitions (SWR Pattern)
+// Dynamic Client-Side Translation Cache for SWR (Stale-While-Revalidate) 0ms Transitions
 const clientTranslationCache = {};
 
 // Popular language codes for sidebar selection
@@ -1275,8 +1275,7 @@ if (!userNumberTag) {
     sessionStorage.setItem("user_tag", userNumberTag);
 }
 
-// Randomize Avatar but strictly keep the persistent User Number Tag
-const avatarsList = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
+// Set up Avatar while keeping the persistent User Number Tag
 function setIdentity(avatar) {
     currentAvatar = avatar;
     localStorage.setItem("chatSenderAvatar", avatar);
@@ -1503,8 +1502,8 @@ async function endDrag() {
     if (dragOffset >= 80) {
         const text = postText.value.trim();
         if (text) {
+            // ONLY SWIPING triggers launch sound and fire overlay!
             const isHighSpeed = swipeDuration < 160;
-            
             playRocketLaunchSound(isHighSpeed);
             if (isHighSpeed) {
                 triggerFireScreenOverlay();
@@ -1537,7 +1536,33 @@ window.addEventListener("touchmove", handleDrag, { passive: false });
 window.addEventListener("touchend", endDrag);
 
 // ========================================================
-// ⌨️ ENTER KEY PRESS SUBMIT FLOW (WITH AUTO-SLIDE ANIMATION)
+// 🚀 ROCKET CLICK TO SEND (NO FIRE, NO LOUD SOUND)
+// ========================================================
+swipeRocket.addEventListener("click", async (e) => {
+    // Only trigger click if they did not drag the rocket (dragOffset is very small or zero)
+    if (dragOffset < 5) {
+        const text = postText.value.trim();
+        if (!text) return;
+        
+        // Hide tutorial guide
+        localStorage.setItem("hasSwipedBefore", "true");
+        swipeGuide.classList.remove("visible");
+        
+        // Rocket slides smoothly to the right, then resets (NO FIRE, NO RUMBLE SOUND!)
+        swipeRocket.style.transition = "transform 180ms ease-in-out";
+        swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
+        
+        // Send message cleanly
+        await sendChatMessage(text);
+        
+        setTimeout(() => {
+            snapRocketBack();
+        }, 250);
+    }
+});
+
+// ========================================================
+// ⌨️ ENTER KEY PRESS SUBMIT FLOW (NO FIRE, NO LOUD SOUND)
 // ========================================================
 postText.addEventListener("keydown", async (e) => {
     if (e.key === "Enter") {
@@ -1549,24 +1574,18 @@ postText.addEventListener("keydown", async (e) => {
         localStorage.setItem("hasSwipedBefore", "true");
         swipeGuide.classList.remove("visible");
 
-        // 1. Trigger Auto-Slide animation on Rocket (Rockets slides by itself!)
-        swipeRocket.style.transition = "transform 180ms ease-in";
+        // 1. Rocket slides smoothly by itself (NO FIRE, NO RUMBLE SOUND!)
+        swipeRocket.style.transition = "transform 180ms ease-in-out";
         swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
-        fireTrail.classList.add("active");
 
-        // 2. Play synthesized launcher sound and full screen fire screen overlay!
-        playRocketLaunchSound(true); // Treat Enter as high-speed instant launch
-        triggerFireScreenOverlay();
-
-        // 3. Clear text immediately and send message
+        // 2. Clear text immediately and send message
         postText.value = "";
         await sendChatMessage(text);
 
-        // 4. Snaps the rocket smoothly back after flight
+        // 3. Snaps the rocket smoothly back after flight
         setTimeout(() => {
-            fireTrail.classList.remove("active");
             snapRocketBack();
-        }, 300);
+        }, 250);
     }
 });
 
@@ -1574,6 +1593,9 @@ postText.addEventListener("keydown", async (e) => {
 // 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
 // ========================================================
 async function sendChatMessage(text) {
+    postText.value = "";
+    snapRocketBack();
+    
     const tempMsgId = \`temp_\${Date.now()}\`;
     const optimisticMsg = {
         id: tempMsgId,
@@ -1588,6 +1610,7 @@ async function sendChatMessage(text) {
         isPending: true
     };
     
+    // Instant UI injection
     messagesData.push(optimisticMsg);
     renderMessages();
     scrollToBottom();
@@ -1632,6 +1655,7 @@ async function sendChatMessage(text) {
 // 🔄 STALE-WHILE-REVALIDATE REFRESH LOOPS
 // ========================================================
 async function fetchMessages(forceScroll = false) {
+    // SWR Cache trigger (0ms transition)
     if (clientTranslationCache[selectedLanguage]) {
         messagesData = clientTranslationCache[selectedLanguage];
         renderMessages();
@@ -1801,7 +1825,7 @@ function closeLanguageModal() {
 }
 
 openModalBtn.addEventListener("click", openLanguageModal);
-closeLangModalBtn.addEventListener("click", closeLanguageModal);
+closeModalBtn.addEventListener("click", closeLanguageModal);
 
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && langModal.classList.contains("active")) closeLanguageModal();
@@ -1819,7 +1843,7 @@ function scrollToBottom() {
             top: messagesContainer.scrollHeight,
             behavior: 'smooth'
         });
-    }, 50);
+    }, 50); // Fast scroll response
 }
 
 // Render clean premium chat bubbles with enlarged text
@@ -1847,11 +1871,19 @@ function renderMessages() {
         const row = document.createElement("div");
         row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
 
+        // Left Bubble: White, Crisp outline border border-neutral-300, shadow
+        // Right Bubble: Blue gradient, Crisp outline border border-blue-600/30
         const bubbleStyle = isMe
             ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
             : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
 
-        let metaString = isOriginal ? \`Original: \${msg.original_lang_name}\` : \`Translated from \${msg.original_lang_name}\`;
+        let metaString = "";
+        if (!isOriginal) {
+            metaString = \`Translated from \${msg.original_lang_name}\`;
+        } else {
+            metaString = \`Original: \${msg.original_lang_name}\`;
+        }
+
         const toggleBtnHtml = !isOriginal
             ? \`<button onclick="toggleOriginal('\${msg.id}')" id="btn-orig-\${msg.id}" class="original-text-link">Show Original</button>\`
             : '';
@@ -1861,19 +1893,26 @@ function renderMessages() {
             : \`<span>\${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>\`;
 
         row.innerHTML = \`
-            \${!isMe ? \`<span class="message-sender">\${msg.sender}</span>\` : ''}
-            <div class="message-bubble">
-                <div>\${msg.translated_text}</div>
+            <!-- Sender Name (ENLARGED to text-xs, Font-ExtraBold, and highly defined) -->
+            \${!isMe ? \`<span class="text-xs font-extrabold text-neutral-400 ml-1 flex items-center gap-1">\${msg.sender}</span>\` : ''}
+            
+            <!-- Message Bubble Body -->
+            <div class="max-w-[80%] md:max-w-[70%] flex flex-col \${isMe ? 'items-end' : 'items-start'}">
+                <div class="\${bubbleStyle} break-words w-full">
+                    \${msg.translated_text}
+                </div>
                 
-                <div class="message-meta-info">
+                <!-- Mini Bubble Footer -->
+                <div class="flex items-center gap-1.5 mt-1 px-1 text-[9px] text-neutral-500 font-medium">
                     \${statusHtml}
                     <span>•</span>
                     <span>\${metaString}</span>
                     \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
                 </div>
-                
+
+                <!-- Expandable Original box -->
                 \${!isOriginal ? \`
-                    <div id="box-orig-\${msg.id}" class="original-collapsible-box hidden">
+                    <div id="box-orig-\${msg.id}" class="hidden mt-1.5 border-l-2 border-neutral-300 pl-2.5 py-0.5 text-[10px] text-neutral-500 italic">
                         Original: "\${msg.original_text}"
                     </div>
                 \` : ''}
@@ -1899,13 +1938,24 @@ window.toggleOriginal = function(msgId) {
 };
 
 // ========================================================
-// 🚀 BOOTSTRAP LOGIC
+// 📦 ROBUST ASYNC ERROR RECOVERY BOOTSTRAPPING
 // ========================================================
 (async function init() {
     currentLangText.textContent = selectedLanguageName;
     
-    await fetchLanguages();
-    await fetchMessages(true); // Initial load scroll to bottom
+    // Robust separate try-catches so if one API fails, the other still loads and works perfectly!
+    try {
+        await fetchLanguages();
+    } catch(err) {
+        console.error("Async load languages error:", err);
+    }
+
+    try {
+        await fetchMessages(true); // Initial load scroll to bottom
+    } catch(err) {
+        console.error("Async load messages error:", err);
+    }
+    
     startAutoRefreshTimer();
 })();
 `;
