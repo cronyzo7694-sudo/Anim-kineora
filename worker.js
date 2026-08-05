@@ -214,7 +214,9 @@ async function handleRequest(request) {
         const transUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(msg.text)}`;
         const transRes = await fetch(transUrl);
         const transJson = await transRes.json();
-        translatedText = transJson[0][0][0];
+        if (transJson && transJson[0]) {
+          translatedText = transJson[0].map(s => s && s[0] ? s[0] : "").join("");
+        }
         
         // Cache it
         translationCache[cacheKey] = translatedText;
@@ -306,8 +308,7 @@ async function handleRequest(request) {
 }
 
 // Embedded Static HTML (Fully customized, premium Sepia eye-care gradient UI)
-const HTML_CONTENT = `
-<!DOCTYPE html>
+const HTML_CONTENT = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -315,7 +316,7 @@ const HTML_CONTENT = `
     <title>BhashaSetu — Global Chat Room</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for elite typography -->
+    <!-- Google Fonts for professional typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -363,7 +364,7 @@ const HTML_CONTENT = `
                 Syncing in <span id="seconds-left">5</span>s
             </span>
             <!-- Simple refresh -->
-            <button id="manual-refresh-btn" class="text-neutral-400 hover:text-neutral-800 p-1.5 rounded transition-colors" title="Force Sync Feed">
+            <button id="manual-refresh-btn" class="text-neutral-500 hover:text-neutral-800 p-1.5 rounded transition-colors" title="Force Sync Feed">
                 <i class="fa-solid fa-rotate-right text-[10px]"></i>
             </button>
             <!-- Minimal Language Button -->
@@ -770,7 +771,7 @@ const HTML_CONTENT = `
                         
                         <!-- Mini Bubble Footer -->
                         <div class="flex items-center gap-1.5 mt-1 px-1 text-[9px] text-neutral-500 font-medium">
-                            <span>\s\${msg.timestamp.split(" ")[1].substring(0, 5)}</span>
+                            <span>\${msg.timestamp.split(" ")[1].substring(0, 5)}</span>
                             <span>•</span>
                             <span>\${metaString}</span>
                             \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
