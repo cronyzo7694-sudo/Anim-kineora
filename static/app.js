@@ -1,20 +1,19 @@
 /**
  * ========================================================
- * BhashaSetu Premium Messenger Core Application Logic
- * Production-ready Vanilla JS ES6 matching strict guidelines
+ * BhashaSetu — Immersive Gamified Chat Application
+ * Production-ready Vanilla JS ES6 with Swipe-to-Send & Fire
  * ========================================================
  */
 
 // Application State
 let selectedLanguage = localStorage.getItem("selectedLanguageCode") || "en";
 let selectedLanguageName = localStorage.getItem("selectedLanguageName") || "English";
-let activeChatId = "global-lobby"; // "global-lobby", "announcements", "ai-assistant"
 let languages = [];
 let messagesData = [];
 let refreshTimer = null;
 let timeLeft = 5;
 
-// Client-Side Translation Cache for SWR (Stale-While-Revalidate) 0ms Transitions
+// Client-Side Cache for 0ms transitions (SWR Pattern)
 const clientTranslationCache = {};
 
 // Custom unique anonymous chat identity generator lists
@@ -23,91 +22,42 @@ const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast",
 const animals = ["Lion", "Panda", "Fox", "Frog", "Koala", "Monkey", "Unicorn", "Octopus", "Dinosaur", "Sloth", "Owl", "Peacock", "Dolphin"];
 const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
 
-// Mock Static Data for Announcements Room
-const announcementMessages = [
-    {
-        id: "ann_1",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Welcome to BhashaSetu! This is the Announcements room. Here you will find helpful tips about using our real-time multi-lingual message board.",
-        timestamp: "10:00 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    },
-    {
-        id: "ann_2",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Tip 💡: Click the Language button on the top right. Type any sentence like 'Bonjour' or 'Namaste' in the search bar. Our AI will automatically detect the language and suggest it instantly!",
-        timestamp: "10:05 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    },
-    {
-        id: "ann_3",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Tip 🚀: Click on 'Show Original' link below any translated message to compare translations and inspect the original phrasing in real-time!",
-        timestamp: "10:10 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    }
-];
-
-// Mock State for AI Assistant Private Chat Room
-const aiAssistantMessages = [
-    {
-        id: "ai_1",
-        sender: "AI Assistant Bot 🤖",
-        avatar: "🤖",
-        translated_text: "Hello! I am your personal multi-lingual AI Assistant. You can message me in any language, and I will converse with you fluently. Try texting me!",
-        timestamp: "12:00 PM",
-        original_lang_name: "English",
-        original_lang: "en"
-    }
-];
-
 // DOM Elements
-const appContainer = document.getElementById("app-container");
-const sidebar = document.getElementById("sidebar");
-const chatWindow = document.getElementById("chat-window");
-
-// Header elements
-const backButton = document.getElementById("back-button");
-const headerAvatar = document.getElementById("header-avatar");
-const headerTitle = document.getElementById("header-title");
-const headerSubtitle = document.getElementById("header-subtitle");
-const openLangModalBtn = document.getElementById("open-lang-modal-btn");
-const currentLangText = document.getElementById("current-lang-text");
-const manualRefreshBtn = document.getElementById("manual-refresh-btn");
-
-// Chat stream & message input
-const messagesContainer = document.getElementById("messages-container");
-const messageForm = document.getElementById("message-form");
-const postText = document.getElementById("post-text");
-const submitBtn = document.getElementById("submit-btn");
-const postAvatar = document.getElementById("post-avatar");
-const postSender = document.getElementById("post-sender");
-const avatarPreview = document.getElementById("avatar-preview");
-const senderDisplay = document.getElementById("sender-display");
-const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
-const countdownIndicator = document.getElementById("countdown-indicator");
-const secondsLeftSpan = document.getElementById("seconds-left");
-
-// Language modal elements
+const openModalBtn = document.getElementById("open-lang-modal-btn");
+const closeModalBtn = document.getElementById("close-lang-modal-btn");
 const langModal = document.getElementById("lang-modal");
-const closeLangModalBtn = document.getElementById("close-lang-modal-btn");
 const langSearchInput = document.getElementById("lang-search-input");
 const aiSuggestionBox = document.getElementById("ai-suggestion-box");
 const aiSuggestionList = document.getElementById("ai-suggestion-list");
 const popularLangsGrid = document.getElementById("popular-languages-grid");
 const allLangsGrid = document.getElementById("all-languages-grid");
+const currentLangText = document.getElementById("current-lang-text");
 
-// Sidebar chat list items
-const chatItems = document.querySelectorAll(".chat-item");
+const messageForm = document.getElementById("message-form");
+const postAvatar = document.getElementById("post-avatar");
+const postSender = document.getElementById("post-sender");
+const avatarPreview = document.getElementById("avatar-preview");
+const senderDisplay = document.getElementById("sender-display");
+const postText = document.getElementById("post-text");
+const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
+
+const messagesContainer = document.getElementById("messages-container");
+const secondsLeftSpan = document.getElementById("seconds-left");
+const manualRefreshBtn = document.getElementById("manual-refresh-btn");
+
+// Drag Elements for Rocket
+const swipeChannel = document.getElementById("swipe-channel");
+const swipeRocket = document.getElementById("swipe-rocket");
+const fireTrail = document.getElementById("fire-trail");
+const swipeGuide = document.getElementById("swipe-guide");
+
+// Full Screen Fire Elements
+const fireOverlay = document.getElementById("fire-overlay");
+const flamesCanvas = document.getElementById("flames-canvas");
+const canvasCtx = flamesCanvas.getContext("2d");
 
 // ========================================================
-// INITIALIZATION & USER CREDENTIALS
+// 👤 INITIALIZE USER CREDENTIALS & IDENTITY
 // ========================================================
 let currentSender = localStorage.getItem("chatSenderName");
 let currentAvatar = localStorage.getItem("chatSenderAvatar") || "🦁";
@@ -145,272 +95,369 @@ shuffleIdentityBtn.addEventListener("click", () => {
 });
 
 // ========================================================
-// RESPONSIVE VIEW TOGGLING (MOBILE & DESKTOP)
+// 🔊 REAL-TIME AUDIO SYNTHESIZER (WEB AUDIO API - 100% OFFLINE)
 // ========================================================
-// On Mobile: Click chat item -> Hide sidebar, Show Chat Window
-// Click Back button -> Show sidebar, Hide Chat Window
-function initResponsive() {
-    // Set default mobile view class on initial load
-    if (window.innerWidth <= 767) {
-        appContainer.classList.add("sidebar-active");
+function playRocketLaunchSound(isHighSpeed = false) {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        
+        // Settings based on speed
+        const duration = isHighSpeed ? 0.35 : 0.65;
+        const startFreq = isHighSpeed ? 140 : 80;
+        const endFreq = isHighSpeed ? 1600 : 900;
+        const volume = isHighSpeed ? 0.45 : 0.25;
+        
+        // Lowpass filter for deep motor thrust
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(250, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + duration);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
+        
+        gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        
+        osc.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    } catch (err) {
+        console.error("Audio synthesis error:", err);
     }
 }
 
-backButton.addEventListener("click", () => {
-    appContainer.classList.add("sidebar-active");
-});
+// ========================================================
+// 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
+// ========================================================
+let flameParticles = [];
+let flameAnimationId = null;
 
-// Handle resize events to prevent stuck states
-window.addEventListener("resize", () => {
-    if (window.innerWidth >= 768) {
-        appContainer.classList.remove("sidebar-active");
-    } else {
-        if (!appContainer.classList.contains("sidebar-active") && activeChatId === "") {
-            appContainer.classList.add("sidebar-active");
+function resizeFlamesCanvas() {
+    flamesCanvas.width = window.innerWidth;
+    flamesCanvas.height = 180;
+}
+window.addEventListener("resize", resizeFlamesCanvas);
+resizeFlamesCanvas();
+
+class FlameParticle {
+    constructor(canvasWidth) {
+        this.x = Math.random() * canvasWidth;
+        this.y = 180;
+        this.speedX = (Math.random() - 0.5) * 6;
+        this.speedY = -(Math.random() * 8 + 4);
+        this.radius = Math.random() * 24 + 10;
+        // Hot flame colors: orange, red, yellow
+        const colors = [
+            "rgba(255, 69, 0, 0.7)",  // Red-orange
+            "rgba(255, 140, 0, 0.6)", // Dark Orange
+            "rgba(255, 215, 0, 0.8)",   // Gold/Yellow
+            "rgba(255, 0, 0, 0.4)"     // Soft red
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 1.0;
+        this.decay = Math.random() * 0.08 + 0.04;
+    }
+    
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life -= this.decay;
+        if (this.radius > 1) this.radius -= 0.6;
+    }
+    
+    draw(ctx) {
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = this.color;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function animateFlames() {
+    canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+    
+    // Spawn 15 particles per frame for intense volume
+    for (let i = 0; i < 15; i++) {
+        flameParticles.push(new FlameParticle(flamesCanvas.width));
+    }
+    
+    flameParticles.forEach((p, idx) => {
+        p.update();
+        p.draw(canvasCtx);
+        if (p.life <= 0 || p.radius <= 0) {
+            flameParticles.splice(idx, 1);
         }
-    }
-});
-
-// ========================================================
-// SIDEBAR ROOM SWITCHING
-// ========================================================
-chatItems.forEach(item => {
-    item.addEventListener("click", () => {
-        // Toggle active styling
-        chatItems.forEach(c => c.classList.remove("active"));
-        item.classList.add("active");
-        
-        // Clear unread badge on click
-        const badge = item.querySelector(".unread-badge");
-        if (badge) badge.classList.add("hidden");
-        
-        const roomId = item.dataset.id;
-        switchRoom(roomId);
     });
-});
-
-function switchRoom(roomId) {
-    activeChatId = roomId;
     
-    // Smooth responsive toggle for mobile
-    if (window.innerWidth <= 767) {
-        appContainer.classList.remove("sidebar-active");
-    }
-    
-    // Update Header
-    if (roomId === "global-lobby") {
-        headerAvatar.textContent = "🌐";
-        headerTitle.textContent = "Global Chat Area";
-        headerSubtitle.textContent = "Auto translating DM Room";
-        messageForm.parentElement.classList.remove("hidden"); // Show input
-        countdownIndicator.classList.remove("hidden");
-        fetchMessages(true);
-    } else if (roomId === "announcements") {
-        headerAvatar.textContent = "📢";
-        headerTitle.textContent = "System Announcements";
-        headerSubtitle.textContent = "Read-only channel • Tips & updates";
-        messageForm.parentElement.classList.add("hidden"); // Read-only
-        countdownIndicator.classList.add("hidden");
-        renderAnnouncements();
-    } else if (roomId === "ai-assistant") {
-        headerAvatar.textContent = "🤖";
-        headerTitle.textContent = "AI Translating Assistant";
-        headerSubtitle.textContent = "Fluent in 130+ languages • Chat privately";
-        messageForm.parentElement.classList.remove("hidden"); // Show input
-        countdownIndicator.classList.add("hidden");
-        renderAIAssistant();
-    }
+    flameAnimationId = requestAnimationFrame(animateFlames);
 }
 
-// ========================================================
-// MESSAGE STREAM RENDER LOGIC
-// ========================================================
-
-// Smooth scroll chat down
-function scrollToBottom() {
+function triggerFireScreenOverlay() {
+    flameParticles = [];
+    fireOverlay.classList.add("active");
+    animateFlames();
+    
+    // Synthesize deep rumble fire roar sound
+    playFireRoarSound();
+    
+    // Exactly 300ms (0.3s) later, stop everything cleanly
     setTimeout(() => {
-        messagesContainer.scrollTo({
-            top: messagesContainer.scrollHeight,
-            behavior: 'smooth'
-        });
-    }, 50);
+        fireOverlay.classList.remove("active");
+        cancelAnimationFrame(flameAnimationId);
+        canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+    }, 300);
 }
 
-// Render Global Lobby messages
-function renderMessages() {
-    if (activeChatId !== "global-lobby") return;
-    
-    if (messagesData.length === 0) {
-        messagesContainer.innerHTML = `
-            <div class="h-full flex flex-col items-center justify-center text-center p-6 text-neutral-400">
-                <i class="fa-regular fa-comment-dots text-4xl text-neutral-600 mb-2"></i>
-                <h4 class="font-bold text-sm text-neutral-300">No Messages yet</h4>
-                <p class="text-xs max-w-xs mt-1">Be the first to join the chat and write a message in any language!</p>
-            </div>
-        `;
-        return;
-    }
-
-    messagesContainer.innerHTML = "";
-    
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    messagesData.forEach(msg => {
-        const isMe = msg.sender.includes(currentSender);
-        const isOriginal = msg.original_lang === selectedLanguage;
+function playFireRoarSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const bufferSize = ctx.sampleRate * 0.3; // 0.3s duration buffer
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
         
-        const row = document.createElement("div");
-        row.className = `message-row ${isMe ? 'outgoing' : 'incoming'}`;
-
-        let metaString = isOriginal ? `Original: ${msg.original_lang_name}` : `Translated from ${msg.original_lang_name}`;
-        const toggleBtnHtml = !isOriginal
-            ? `<button onclick="toggleOriginal('${msg.id}')" id="btn-orig-${msg.id}" class="original-text-link">Show Original</button>`
-            : '';
-
-        const statusHtml = msg.isPending 
-            ? `<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>`
-            : `<span>${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>`;
-
-        row.innerHTML = `
-            ${!isMe ? `<span class="message-sender">${msg.sender}</span>` : ''}
-            <div class="message-bubble">
-                <div>${msg.translated_text}</div>
-                
-                <div class="message-meta-info">
-                    ${statusHtml}
-                    <span>•</span>
-                    <span>${metaString}</span>
-                    ${toggleBtnHtml ? `<span>•</span> ${toggleBtnHtml}` : ''}
-                </div>
-                
-                ${!isOriginal ? `
-                    <div id="box-orig-${msg.id}" class="original-collapsible-box hidden">
-                        Original: "${msg.original_text}"
-                    </div>
-                ` : ''}
-            </div>
-        `;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-}
-
-// Render Announcements
-function renderAnnouncements() {
-    messagesContainer.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    announcementMessages.forEach(msg => {
-        const row = document.createElement("div");
-        row.className = "message-row incoming";
-        row.innerHTML = `
-            <span class="message-sender">${msg.sender}</span>
-            <div class="message-bubble">
-                <div>${msg.translated_text}</div>
-                <div class="message-meta-info">
-                    <span>${msg.timestamp}</span>
-                </div>
-            </div>
-        `;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-    scrollToBottom();
-}
-
-// Render Private AI Assistant
-function renderAIAssistant() {
-    messagesContainer.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    aiAssistantMessages.forEach(msg => {
-        const isMe = msg.isMe;
-        const row = document.createElement("div");
-        row.className = `message-row ${isMe ? 'outgoing' : 'incoming'}`;
+        // Generate brown noise / rumble
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 4.5; // Amplify rumble
+        }
         
-        row.innerHTML = `
-            ${!isMe ? `<span class="message-sender">${msg.sender}</span>` : ''}
-            <div class="message-bubble">
-                <div>${msg.translated_text}</div>
-                <div class="message-meta-info">
-                    <span>${msg.timestamp}</span>
-                </div>
-            </div>
-        `;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-    scrollToBottom();
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 180; // deep bass rumble
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        noise.start();
+    } catch(e) {}
 }
-
-// Global toggle raw message helper
-window.toggleOriginal = function(msgId) {
-    const box = document.getElementById(`box-orig-${msgId}`);
-    const btn = document.getElementById(`btn-orig-${msgId}`);
-    if (box.classList.contains("hidden")) {
-        box.classList.remove("hidden");
-        btn.textContent = "Hide Original";
-        scrollToBottom();
-    } else {
-        box.classList.add("hidden");
-        btn.textContent = "Show Original";
-    }
-};
 
 // ========================================================
-// SYNC FEED LOGIC WITH STALE-WHILE-REVALIDATE CACHING
+// 🚀 SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
+// ========================================================
+let isDragging = false;
+let startX = 0;
+let dragOffset = 0;
+let swipeStartTime = 0;
+const maxOffset = 88; // Slide limit inside channel
+
+// Show/Hide Bouncing Guide Arrow (Tutorial helper)
+function checkSwipeGuide() {
+    const hasSwiped = localStorage.getItem("hasSwipedBefore") === "true";
+    if (!hasSwiped && postText.value.trim().length > 0) {
+        swipeGuide.classList.add("visible");
+    } else {
+        swipeGuide.classList.remove("visible");
+    }
+}
+
+postText.addEventListener("input", checkSwipeGuide);
+
+// Drag Handler (Supports Mouse & Touch simultaneously)
+function startDrag(e) {
+    isDragging = true;
+    startX = e.clientX || (e.touches && e.touches[0].clientX);
+    swipeStartTime = Date.now();
+    fireTrail.classList.add("active");
+    swipeRocket.style.transition = "none"; // Stop snapping transitions
+    swipeGuide.classList.remove("visible");
+}
+
+function handleDrag(e) {
+    if (!isDragging) return;
+    const currentX = e.clientX || (e.touches && e.touches[0].clientX);
+    dragOffset = currentX - startX;
+    
+    // Lock drag between 0px and maxOffset (right limit)
+    if (dragOffset < 0) dragOffset = 0;
+    if (dragOffset > maxOffset) dragOffset = maxOffset;
+    
+    swipeRocket.style.transform = `translateX(${dragOffset}px)`;
+}
+
+async function endDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    fireTrail.classList.remove("active");
+    
+    const swipeEndTime = Date.now();
+    const swipeDuration = swipeEndTime - swipeStartTime;
+    
+    // Check if dragged past threshold to trigger send
+    if (dragOffset >= 80) {
+        const text = postText.value.trim();
+        if (text) {
+            // Speed calculation
+            const isHighSpeed = swipeDuration < 160; // Swiped very quickly!
+            
+            // Play launching sound & Fire effects!
+            playRocketLaunchSound(isHighSpeed);
+            if (isHighSpeed) {
+                triggerFireScreenOverlay();
+            }
+            
+            // Mark tutorial done
+            localStorage.setItem("hasSwipedBefore", "true");
+            
+            // Deliver Message
+            await sendChatMessage(text);
+        } else {
+            // Snap back if input empty
+            snapRocketBack();
+        }
+    } else {
+        // Snap back if threshold not met
+        snapRocketBack();
+    }
+}
+
+function snapRocketBack() {
+    swipeRocket.style.transition = "transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.25)";
+    swipeRocket.style.transform = "translateX(0px)";
+    dragOffset = 0;
+    checkSwipeGuide();
+}
+
+// Bind Touch/Mouse Event Listeners
+swipeRocket.addEventListener("mousedown", startDrag);
+window.addEventListener("mousemove", handleDrag);
+window.addEventListener("mouseup", endDrag);
+
+swipeRocket.addEventListener("touchstart", startDrag, { passive: true });
+window.addEventListener("touchmove", handleDrag, { passive: false });
+window.addEventListener("touchend", endDrag);
+
+// ========================================================
+// 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
+// ========================================================
+async function sendChatMessage(text) {
+    // Clear input box immediately (0ms response time!)
+    postText.value = "";
+    snapRocketBack();
+    
+    const tempMsgId = `temp_${Date.now()}`;
+    const optimisticMsg = {
+        id: tempMsgId,
+        sender: `${currentAvatar} ${currentSender}`,
+        avatar: currentAvatar,
+        text: text,
+        original_text: text,
+        original_lang: selectedLanguage,
+        original_lang_name: selectedLanguageName,
+        translated_text: text,
+        timestamp: "sending...",
+        isPending: true
+    };
+    
+    // Instant UI injection
+    messagesData.push(optimisticMsg);
+    renderMessages();
+    scrollToBottom();
+    
+    try {
+        const response = await fetch("/api/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sender: `${currentAvatar} ${currentSender}`, avatar: currentAvatar, text })
+        });
+        
+        if (response.ok) {
+            const serverMsg = await response.json();
+            const index = messagesData.findIndex(m => m.id === tempMsgId);
+            if (index !== -1) {
+                messagesData[index] = {
+                    id: serverMsg.id,
+                    sender: serverMsg.sender,
+                    avatar: serverMsg.avatar,
+                    original_text: serverMsg.text,
+                    original_lang: serverMsg.original_lang,
+                    original_lang_name: serverMsg.original_lang_name,
+                    translated_text: serverMsg.text,
+                    timestamp: serverMsg.timestamp
+                };
+            }
+            clientTranslationCache[selectedLanguage] = messagesData;
+            renderMessages();
+        } else {
+            messagesData = messagesData.filter(m => m.id !== tempMsgId);
+            renderMessages();
+            alert("Message Delivery Failed");
+        }
+    } catch (err) {
+        console.error(err);
+        messagesData = messagesData.filter(m => m.id !== tempMsgId);
+        renderMessages();
+    }
+}
+
+// ========================================================
+// 🔄 STALE-WHILE-REVALIDATE REFRESH LOOPS
 // ========================================================
 async function fetchMessages(forceScroll = false) {
-    if (activeChatId !== "global-lobby") return;
-
-    // SWR Cache optimization: Render immediately if cached
+    // SWR Cache trigger (0ms transition)
     if (clientTranslationCache[selectedLanguage]) {
         messagesData = clientTranslationCache[selectedLanguage];
         renderMessages();
         if (forceScroll) scrollToBottom();
     }
 
-    // Refresh in background
     try {
-        openLangModalBtn.classList.add("animate-pulse");
+        openModalBtn.classList.add("animate-pulse");
 
         const res = await fetch(`/api/messages?lang=${selectedLanguage}`);
         const data = await res.json();
         
-        openLangModalBtn.classList.remove("animate-pulse");
+        openModalBtn.classList.remove("animate-pulse");
 
         const isNewMessageAdded = data.messages.length !== messagesData.length;
         messagesData = data.messages;
         
-        // Write into cache
         clientTranslationCache[selectedLanguage] = messagesData;
-        
         renderMessages();
         
         if (isNewMessageAdded || forceScroll) {
             scrollToBottom();
         }
     } catch (err) {
-        console.error("Failed to load feed:", err);
-        openLangModalBtn.classList.remove("animate-pulse");
+        console.error("Sync error:", err);
+        openModalBtn.classList.remove("animate-pulse");
     }
 }
 
-// Countdown timer loop
 function startAutoRefreshTimer() {
     if (refreshTimer) clearInterval(refreshTimer);
     timeLeft = 5;
     secondsLeftSpan.textContent = timeLeft;
     
     refreshTimer = setInterval(() => {
-        if (activeChatId !== "global-lobby") return;
-        
         timeLeft--;
         if (timeLeft <= 0) {
             timeLeft = 5;
@@ -429,136 +476,7 @@ manualRefreshBtn.addEventListener("click", () => {
 });
 
 // ========================================================
-// SEND MESSAGE & AI CHAT SIMULATOR
-// ========================================================
-messageForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = postText.value.trim();
-    if (!text) return;
-    
-    if (activeChatId === "global-lobby") {
-        // Optimistic UI update (0ms immediate response)
-        const tempMsgId = `temp_${Date.now()}`;
-        const optimisticMsg = {
-            id: tempMsgId,
-            sender: `${currentAvatar} ${currentSender}`,
-            avatar: currentAvatar,
-            text: text,
-            original_text: text,
-            original_lang: selectedLanguage,
-            original_lang_name: selectedLanguageName,
-            translated_text: text,
-            timestamp: "sending...",
-            isPending: true
-        };
-        
-        messagesData.push(optimisticMsg);
-        renderMessages();
-        scrollToBottom();
-        
-        postText.value = ""; // Clear box instantly
-        
-        try {
-            const response = await fetch("/api/messages", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sender: `${currentAvatar} ${currentSender}`, avatar: currentAvatar, text })
-            });
-            
-            if (response.ok) {
-                const serverMsg = await response.json();
-                const index = messagesData.findIndex(m => m.id === tempMsgId);
-                if (index !== -1) {
-                    messagesData[index] = {
-                        id: serverMsg.id,
-                        sender: serverMsg.sender,
-                        avatar: serverMsg.avatar,
-                        original_text: serverMsg.text,
-                        original_lang: serverMsg.original_lang,
-                        original_lang_name: serverMsg.original_lang_name,
-                        translated_text: serverMsg.text,
-                        timestamp: serverMsg.timestamp
-                    };
-                }
-                clientTranslationCache[selectedLanguage] = messagesData;
-                renderMessages();
-            } else {
-                messagesData = messagesData.filter(m => m.id !== tempMsgId);
-                renderMessages();
-                alert("Delivery failed");
-            }
-        } catch (err) {
-            console.error(err);
-            messagesData = messagesData.filter(m => m.id !== tempMsgId);
-            renderMessages();
-        }
-    } 
-    else if (activeChatId === "ai-assistant") {
-        // Send message to AI Assistant
-        const userMsg = {
-            id: `usr_${Date.now()}`,
-            sender: `${currentAvatar} ${currentSender}`,
-            isMe: true,
-            translated_text: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        aiAssistantMessages.push(userMsg);
-        renderAIAssistant();
-        postText.value = "";
-        
-        // Show Typing indicator!
-        showAITypingIndicator();
-        
-        // Trigger private AI assistant response (simulated translated chat)
-        setTimeout(async () => {
-            removeAITypingIndicator();
-            
-            // Translate the reply based on the active language
-            let aiReplyText = "I have translated your message. You are speaking wonderfully!";
-            try {
-                const transUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${selectedLanguage}&dt=t&q=${encodeURIComponent("Hello! I received your message: '" + text + "'. I can talk to you in any language. Your translation system is 100% active and running on Cloudflare Edge!")}`;
-                const res = await fetch(transUrl);
-                const json = await res.json();
-                aiReplyText = json[0].map(s => s && s[0] ? s[0] : "").join("");
-            } catch (err) {}
-
-            const aiMsg = {
-                id: `ai_${Date.now()}`,
-                sender: "AI Assistant Bot 🤖",
-                isMe: false,
-                translated_text: aiReplyText,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            aiAssistantMessages.push(aiMsg);
-            renderAIAssistant();
-        }, 1500);
-    }
-});
-
-// Typing Indicator helpers
-function showAITypingIndicator() {
-    const indicator = document.createElement("div");
-    indicator.className = "message-row incoming";
-    indicator.id = "ai-typing-row";
-    indicator.innerHTML = `
-        <span class="message-sender">AI Assistant Bot 🤖</span>
-        <div class="typing-bubble">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-        </div>
-    `;
-    messagesContainer.querySelector(".chat-messages-inner").appendChild(indicator);
-    scrollToBottom();
-}
-
-function removeAITypingIndicator() {
-    const indicator = document.getElementById("ai-typing-row");
-    if (indicator) indicator.remove();
-}
-
-// ========================================================
-// LANGUAGE SELECTION MODAL LOGIC
+// 🌍 LANGUAGE SELECT MODAL LOGIC
 // ========================================================
 async function fetchLanguages() {
     try {
@@ -583,10 +501,8 @@ function renderLanguages(filter = "") {
         const isSelected = selectedLanguage === code;
         
         const matches = name.toLowerCase().includes(cleanFilter) || code.toLowerCase().includes(cleanFilter);
-        
         const btnClass = isSelected ? "lang-btn active" : "lang-btn";
 
-        // Popular
         if (popularCodes.includes(code) && !cleanFilter) {
             const btn = document.createElement("button");
             btn.type = "button";
@@ -596,7 +512,6 @@ function renderLanguages(filter = "") {
             popularLangsGrid.appendChild(btn);
         }
 
-        // All
         if (matches) {
             matchCount++;
             const btn = document.createElement("button");
@@ -676,8 +591,8 @@ function closeLanguageModal() {
     langModal.classList.remove("active");
 }
 
-openLangModalBtn.addEventListener("click", openLanguageModal);
-closeLangModalBtn.addEventListener("click", closeLanguageModal);
+openModalBtn.addEventListener("click", openLanguageModal);
+closeModalBtn.addEventListener("click", closeLanguageModal);
 
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && langModal.classList.contains("active")) closeLanguageModal();
@@ -687,13 +602,12 @@ langModal.addEventListener("click", (e) => {
 });
 
 // ========================================================
-// INITIAL BOOTSTRAP
+// 🚀 BOOTSTRAP LOGIC
 // ========================================================
 (async function init() {
     currentLangText.textContent = selectedLanguageName;
     
-    initResponsive();
     await fetchLanguages();
-    switchRoom("global-lobby");
+    await fetchMessages(true); // Initial load scroll to bottom
     startAutoRefreshTimer();
 })();

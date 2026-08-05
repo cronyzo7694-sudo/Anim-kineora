@@ -343,122 +343,53 @@ const HTML_CONTENT = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BhashaSetu — Premium Chat Messenger</title>
-    <!-- Google Fonts for elite, clean Inter typography -->
+    <title>BhashaSetu — Premium Universal Chat Room</title>
+    <!-- Google Fonts for Inter typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome for robust, clean vector icons -->
+    <!-- FontAwesome for neat icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Linked Custom CSS -->
+    <!-- Linked Custom Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Main Container -->
+    <!-- Full Screen Blazing Fire Overlay (Triggered on high-speed swipe) -->
+    <div id="fire-overlay" class="fire-screen-overlay">
+        <!-- Canvas to draw realistic climbing fire flames -->
+        <canvas id="flames-canvas" class="climbing-flames-canvas"></canvas>
+    </div>
+
+    <!-- App Container -->
     <div class="app-container" id="app-container">
 
         <!-- ==========================================
-             LEFT PANEL: SIDEBAR
-             ========================================== -->
-        <aside class="sidebar" id="sidebar">
-            
-            <!-- Sidebar Header & Search Box -->
-            <div class="sidebar-search-container">
-                <div class="search-wrapper">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="sidebar-search" class="search-input" placeholder="Search chats...">
-                </div>
-            </div>
-
-            <!-- Chat Channels List -->
-            <div class="chat-list custom-scroll">
-                
-                <!-- Chat Item 1: Global Message Board -->
-                <div class="chat-item active" data-id="global-lobby">
-                    <div class="avatar-container">
-                        <div class="avatar">🌐</div>
-                        <span class="status-online"></span>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">Global Chat Area</span>
-                            <span class="chat-meta-time">5s sync</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Auto translating DM Room...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Item 2: AI Assistant Bot -->
-                <div class="chat-item" data-id="ai-assistant">
-                    <div class="avatar-container">
-                        <div class="avatar">🤖</div>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">AI Assistant Bot</span>
-                            <span class="chat-meta-time">Online</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Text me in any language!</span>
-                            <span class="unread-badge">1</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Item 3: Announcements Room -->
-                <div class="chat-item" data-id="announcements">
-                    <div class="avatar-container">
-                        <div class="avatar">📢</div>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">Announcements</span>
-                            <span class="chat-meta-time">Read-only</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Welcome tips and guide lines...</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </aside>
-
-        <!-- ==========================================
-             RIGHT PANEL: CHAT WINDOW
+             CHAT WINDOW MAIN COLUMN (100% Width Layout)
              ========================================== -->
         <main class="chat-window" id="chat-window">
 
-            <!-- Chat Window Header -->
+            <!-- Chat Header -->
             <header class="chat-header">
                 <div class="header-left">
-                    <!-- Mobile Back button -->
-                    <button class="back-button" id="back-button" title="Back to Sidebar">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <!-- Header Avatar -->
-                    <div class="header-avatar" id="header-avatar">🌐</div>
-                    <!-- Details -->
+                    <div class="header-avatar">🌐</div>
                     <div class="header-details">
-                        <h2 class="header-title" id="header-title">Global Chat Area</h2>
-                        <p class="header-subtitle" id="header-subtitle">Auto translating DM Room</p>
+                        <h2 class="header-title">BhashaSetu Global Chat</h2>
+                        <p class="header-subtitle">Auto Translating Group Chat Room</p>
                     </div>
                 </div>
 
                 <!-- Header Actions Panel -->
                 <div class="header-actions">
-                    <!-- Sync Indicator & Countdown -->
+                    <!-- Sync Indicator -->
                     <span class="text-[10px] text-neutral-400 font-mono hidden sm:inline" id="countdown-indicator">
                         Syncing in <span id="seconds-left">5</span>s
                     </span>
-                    <!-- Manual Refresh -->
+                    <!-- Manual Sync -->
                     <button id="manual-refresh-btn" class="header-icon-btn" title="Force Sync Feed">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
-                    <!-- Language Picker Trigger -->
+                    <!-- Language Selection Trigger -->
                     <button id="open-lang-modal-btn" class="header-btn" title="Choose Translation Language">
                         <i class="fa-solid fa-language"></i>
                         <span id="current-lang-text">English (en)</span>
@@ -466,36 +397,45 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 </div>
             </header>
 
-            <!-- Scrollable Messages Container with Vector SVG Pattern background -->
+            <!-- Scrollable Messages Container with Vector SVG Wallpaper -->
             <section class="chat-messages-container custom-scroll" id="messages-container">
-                <!-- Message row bubbles injected here dynamically by app.js -->
+                <!-- Chat bubbles are injected here by app.js -->
             </section>
 
-            <!-- Bottom Sticky Input Bar Area -->
+            <!-- Bottom Sticky Chat Footer Area -->
             <footer class="chat-footer">
                 <div class="input-row">
                     
-                    <!-- Quick Identity Indicator & Dice Toggle -->
-                    <button type="button" id="shuffle-identity-btn" class="identity-badge" title="Click to randomize your nickname">
+                    <!-- Quick Identity Indicator & Dice Shuffle -->
+                    <button type="button" id="shuffle-identity-btn" class="identity-badge" title="Tap to randomize your nickname">
                         <span id="avatar-preview" class="identity-avatar">🦁</span>
                         <span id="sender-display" class="identity-name">Toofani Panda</span>
                         <i class="fa-solid fa-dice text-neutral-400 text-[10px]"></i>
                     </button>
                     
-                    <!-- Text Message input and Send button -->
+                    <!-- Unified Input Container -->
                     <div class="footer-input-container">
                         <!-- Hidden Identity Credentials -->
                         <input type="hidden" id="post-avatar" value="🦁">
                         <input type="hidden" id="post-sender" value="🦁 Anonymous">
 
-                        <form id="message-form" class="flex-grow flex items-center gap-2">
-                            <input type="text" id="post-text" required autocomplete="off" class="message-input" placeholder="Type a message in any bhasha...">
+                        <!-- Text Field -->
+                        <input type="text" id="post-text" required autocomplete="off" class="message-input" placeholder="Type message in any language...">
+                        
+                        <!-- 🚀 Revolutionary SWIPE-TO-SEND ROCKET Channel -->
+                        <div id="swipe-channel" class="swipe-send-channel" title="Swipe rocket right to send!">
+                            <!-- Bouncing Tutorial Arrow Guide -->
+                            <div id="swipe-guide" class="swipe-guide-arrow">
+                                <i class="fa-solid fa-angles-left"></i> Swipe
+                            </div>
                             
-                            <!-- Circular Blue Send Button -->
-                            <button type="submit" id="submit-btn" class="send-button" title="Send Message">
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </form>
+                            <!-- Grabbable Rocket handle button -->
+                            <div id="swipe-rocket" class="swipe-rocket-btn">
+                                <i class="fa-solid fa-rocket"></i>
+                                <!-- Embedded Fire exhaust trail -->
+                                <span id="fire-trail" class="rocket-fire-trail">🔥</span>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -506,7 +446,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
     </div>
 
     <!-- ==========================================
-         LANGUAGE SELECTOR MODAL (Insta/Telegram Style)
+         LANGUAGE SELECTOR POPUP MODAL
          ========================================== -->
     <div id="lang-modal" class="modal-overlay">
         <div class="modal-card">
@@ -516,7 +456,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 <button id="close-lang-modal-btn" class="modal-close-btn">Close</button>
             </div>
 
-            <!-- Search bar -->
+            <!-- Search Field -->
             <div class="modal-search-box">
                 <div class="search-wrapper">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -527,12 +467,12 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 <div id="ai-suggestion-box" class="ai-suggest-container mt-2.5 hidden">
                     <span class="modal-sub-title"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggested:</span>
                     <div id="ai-suggestion-list" class="ai-suggest-chips">
-                        <!-- AI suggested chips -->
+                        <!-- AI suggestions -->
                     </div>
                 </div>
             </div>
 
-            <!-- Body list content -->
+            <!-- Body grid list -->
             <div class="modal-body custom-scroll">
                 <!-- Popular list -->
                 <div>
@@ -542,7 +482,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     </div>
                 </div>
 
-                <!-- All Languages list -->
+                <!-- All list -->
                 <div>
                     <h4 class="modal-sub-title" id="all-langs-header">All Languages</h4>
                     <div class="lang-grid" id="all-languages-grid">
@@ -553,23 +493,21 @@ const HTML_CONTENT = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Linked Custom JS App Logic -->
+    <!-- Linked JS App Logic -->
     <script src="app.js"></script>
 </body>
 </html>
 `;
 const STYLE_CONTENT = `/* 
 ========================================================
-BhashaSetu Premium Messenger Core Design Stylesheet
-Production-ready CSS matching strict premium guidelines
+BhashaSetu Premium Messenger — Single-Page Chat Stylesheet
+Highly polished, single-feed layout with immersive animations
 ========================================================
 */
 
-/* Core Custom Properties & CSS Variables */
 :root {
     /* Colors */
     --bg-color: #0F1115;
-    --bg-sidebar: #15181F;
     --bg-header: #12151B;
     --bg-input: #1B1E26;
     --accent-color: #4F8CFF;
@@ -588,19 +526,15 @@ Production-ready CSS matching strict premium guidelines
     --font-chat: 16px;
     --font-chat-mobile: 15px;
     --font-time: 12px;
-    --font-sidebar: 15px;
-    --font-search: 15px;
     --font-input: 16px;
     --font-title: 17px;
     --font-subtitle: 13px;
     
     /* Sizing & Dimensions */
-    --sidebar-width: 360px;
-    --sidebar-min-width: 320px;
     --header-height-desktop: 64px;
     --header-height-mobile: 56px;
-    --input-height-desktop: 60px;
-    --input-height-mobile: 56px;
+    --input-height-desktop: 72px;
+    --input-height-mobile: 68px;
     
     /* Radii */
     --border-radius: 12px;
@@ -612,7 +546,6 @@ Production-ready CSS matching strict premium guidelines
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
-/* Reset and Core Layout */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -627,22 +560,20 @@ body, html {
     font-family: var(--font-family);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
-/* App Wrapper */
+/* App Wrapper - Single Column Chat Panel */
 .app-container {
     display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     position: relative;
-    background-color: var(--bg-color);
 }
 
 /* Custom Scrollbars */
 .custom-scroll::-webkit-scrollbar {
     width: 5px;
-    height: 5px;
 }
 .custom-scroll::-webkit-scrollbar-track {
     background: transparent;
@@ -655,202 +586,7 @@ body, html {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* ========================================================
-   SIDEBAR STYLES
-   ======================================================== */
-.sidebar {
-    width: var(--sidebar-width);
-    min-width: var(--sidebar-min-width);
-    height: 100%;
-    background-color: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    z-index: 20;
-    transition: transform var(--transition-speed) ease-in-out;
-}
-
-/* Sidebar Search Section */
-.sidebar-search-container {
-    padding: 14px 16px;
-    border-b: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    shrink: 0;
-}
-
-.search-wrapper {
-    position: relative;
-    width: 100%;
-    height: var(--font-search-height, 38px);
-}
-
-.search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    font-size: 14px;
-    pointer-events: none;
-}
-
-.search-input {
-    width: 100%;
-    height: 100%;
-    background-color: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    padding-left: 38px;
-    padding-right: 16px;
-    color: var(--text-primary);
-    font-size: var(--font-search);
-    outline: none;
-    transition: border-color var(--transition-speed);
-}
-
-.search-input:focus {
-    border-color: var(--accent-color);
-}
-
-/* Sidebar Chat List */
-.chat-list {
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-/* Individual Chat Item (72px Tall) */
-.chat-item {
-    height: 72px;
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: background-color var(--transition-speed);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-    user-select: none;
-}
-
-.chat-item:hover {
-    background-color: rgba(255, 255, 255, 0.03);
-}
-
-.chat-item.active {
-    background-color: rgba(79, 140, 255, 0.08);
-    border-right: 2px solid var(--accent-color);
-}
-
-/* Avatar Layouts */
-.avatar-container {
-    position: relative;
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
-}
-
-.avatar {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1.5px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--text-primary);
-    object-fit: cover;
-}
-
-.status-online {
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 11px;
-    height: 11px;
-    background-color: #2ec4b6;
-    border: 2px solid var(--bg-sidebar);
-    border-radius: 50%;
-}
-
-/* Chat Item Content */
-.chat-info {
-    flex-grow: 1;
-    min-width: 0;
-}
-
-.chat-row-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 4px;
-}
-
-.chat-name {
-    font-size: var(--font-sidebar);
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.chat-meta-time {
-    font-size: var(--font-time);
-    color: var(--text-secondary);
-    white-space: nowrap;
-}
-
-.chat-row-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.chat-preview {
-    font-size: 13px;
-    color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 8px;
-    flex-grow: 1;
-}
-
-/* Unread Badge (22px Circular) */
-.unread-badge {
-    min-width: 20px;
-    height: 20px;
-    background-color: var(--accent-color);
-    border-radius: 10px;
-    color: #ffffff;
-    font-size: 11px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    flex-shrink: 0;
-}
-
-/* ========================================================
-   CHAT WINDOW MAIN PANEL
-   ======================================================== */
-.chat-window {
-    flex-grow: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-color);
-    position: relative;
-    z-index: 10;
-}
-
-/* Chat Header (64px Tall Desktop) */
+/* Header (64px Tall Desktop) */
 .chat-header {
     height: var(--header-height-desktop);
     background-color: var(--bg-header);
@@ -860,34 +596,21 @@ body, html {
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
-    user-select: none;
     z-index: 15;
+    user-select: none;
 }
 
 .header-left {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-width: 0;
-}
-
-.back-button {
-    display: none; /* Desktop only */
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 8px;
-    font-size: 18px;
-    outline: none;
 }
 
 .header-avatar {
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #0084ff 0%, #1877f2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -895,29 +618,18 @@ body, html {
     font-weight: bold;
 }
 
-.header-details {
-    min-width: 0;
-}
-
 .header-title {
     font-size: var(--font-title);
     font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .header-subtitle {
     font-size: var(--font-subtitle);
     color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     margin-top: 1px;
 }
 
-/* Header Right Panel Buttons */
+/* Header Actions */
 .header-actions {
     display: flex;
     align-items: center;
@@ -933,7 +645,7 @@ body, html {
     padding: 6px 14px;
     border-radius: 16px;
     cursor: pointer;
-    transition: background-color var(--transition-speed), border-color var(--transition-speed);
+    transition: background-color var(--transition-speed);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -942,7 +654,6 @@ body, html {
 
 .header-btn:hover {
     background-color: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .header-icon-btn {
@@ -967,16 +678,14 @@ body, html {
     background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* ========================================================
-   CHAT CONTAINER WITH VECTOR SVG BACKGROUND
-   ======================================================== */
+/* Chat Canvas area with Repeating Doodle Vector SVG Background */
 .chat-messages-container {
     flex-grow: 1;
     width: 100%;
     overflow-y: auto;
     position: relative;
     
-    /* 100% Vector SVG doodle icon background repeating seamless forever */
+    /* 100% Vector SVG doodle background repeating seamless forever */
     background-image: url('chat-pattern.svg');
     background-repeat: repeat;
     background-size: 420px;
@@ -984,7 +693,6 @@ body, html {
     padding: 24px;
 }
 
-/* Smooth Scrolling & Appear Animations */
 .chat-messages-inner {
     width: 100%;
     max-width: 800px;
@@ -994,7 +702,7 @@ body, html {
     gap: 8px; /* Strict 8px space between messages */
 }
 
-/* Message Bubble */
+/* Message Bubble Rows */
 .message-row {
     width: 100%;
     display: flex;
@@ -1003,25 +711,13 @@ body, html {
 }
 
 @keyframes messageFadeIn {
-    0% {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
 
-.message-row.incoming {
-    align-items: flex-start;
-}
+.message-row.incoming { align-items: flex-start; }
+.message-row.outgoing { align-items: flex-end; }
 
-.message-row.outgoing {
-    align-items: flex-end;
-}
-
-/* Name tag above bubble */
 .message-sender {
     font-size: 11px;
     font-weight: 700;
@@ -1031,11 +727,10 @@ body, html {
     user-select: none;
 }
 
-/* Actual Message Box */
 .message-bubble {
-    max-width: 72%; /* Strict 72% max width */
-    padding: 12px 16px; /* Strict padding */
-    border-radius: var(--bubble-radius); /* Strict 18px radius */
+    max-width: 72%;
+    padding: 12px 16px;
+    border-radius: var(--bubble-radius);
     font-size: var(--font-chat);
     line-height: 1.5;
     position: relative;
@@ -1045,7 +740,6 @@ body, html {
     gap: 4px;
 }
 
-/* Incoming Bubble (Dark Gray) */
 .message-row.incoming .message-bubble {
     background-color: var(--bubble-incoming);
     color: var(--text-primary);
@@ -1053,14 +747,12 @@ body, html {
     border: 1px solid var(--bubble-incoming-border);
 }
 
-/* Outgoing Bubble (Blue) */
 .message-row.outgoing .message-bubble {
     background-color: var(--bubble-outgoing);
     color: #ffffff;
     border-top-right-radius: 4px;
 }
 
-/* Message Metadata Row */
 .message-meta-info {
     display: flex;
     align-items: center;
@@ -1068,18 +760,11 @@ body, html {
     gap: 6px;
     font-size: var(--font-time);
     margin-top: 2px;
-    user-select: none;
 }
 
-.message-row.incoming .message-meta-info {
-    color: var(--text-secondary);
-}
+.message-row.incoming .message-meta-info { color: var(--text-secondary); }
+.message-row.outgoing .message-meta-info { color: rgba(255, 255, 255, 0.7); }
 
-.message-row.outgoing .message-meta-info {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-/* Collapsible Original Text */
 .original-text-link {
     font-size: 11px;
     font-weight: 700;
@@ -1091,13 +776,8 @@ body, html {
     outline: none;
 }
 
-.message-row.incoming .original-text-link {
-    color: var(--accent-color);
-}
-
-.message-row.outgoing .original-text-link {
-    color: #ffffff;
-}
+.message-row.incoming .original-text-link { color: var(--accent-color); }
+.message-row.outgoing .original-text-link { color: #ffffff; }
 
 .original-collapsible-box {
     margin-top: 6px;
@@ -1108,36 +788,8 @@ body, html {
     opacity: 0.85;
 }
 
-/* Typing Indicator Animation */
-.typing-bubble {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background-color: var(--bubble-incoming);
-    padding: 12px 18px;
-    border-radius: var(--bubble-radius);
-    border-top-left-radius: 4px;
-    max-width: 100px;
-}
-
-.typing-dot {
-    width: 6px;
-    height: 6px;
-    background-color: var(--text-secondary);
-    border-radius: 50%;
-    animation: typingBounce 1.4s infinite ease-in-out both;
-}
-
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes typingBounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1.0); }
-}
-
 /* ========================================================
-   INPUT FOOTER AREA
+   BOTTOM CHAT FOOTER & REVOLUTIONARY SWIPE-TO-SEND ROCKET
    ======================================================== */
 .chat-footer {
     height: var(--input-height-desktop);
@@ -1159,11 +811,11 @@ body, html {
     gap: 12px;
 }
 
-/* Quick Identity Indicator */
+/* Identity Bubble Button */
 .identity-badge {
     background-color: var(--bg-input);
     border: 1px solid var(--border-color);
-    padding: 6px 14px;
+    padding: 8px 14px;
     border-radius: 20px;
     display: flex;
     align-items: center;
@@ -1179,78 +831,160 @@ body, html {
     background-color: rgba(255, 255, 255, 0.04);
 }
 
-.identity-avatar {
-    font-size: 14px;
-}
+.identity-avatar { font-size: 14px; }
+.identity-name { font-size: 11px; font-weight: 700; color: var(--text-primary); }
 
-.identity-name {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-/* Round Input Container */
+/* Unified Input area covering text field + swipe channel */
 .footer-input-container {
     flex-grow: 1;
-    position: relative;
     display: flex;
     align-items: center;
-}
-
-.message-input {
-    width: 100%;
-    height: 42px;
     background-color: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--input-radius); /* Strict 28px radius */
-    padding-left: 18px; /* Strict padding */
-    padding-right: 18px;
+    padding: 4px 6px 4px 18px; /* Padding for neat look */
+    gap: 8px;
+}
+
+.message-input {
+    flex-grow: 1;
+    height: 40px;
+    background: none;
+    border: none;
     color: var(--text-primary);
     font-size: var(--font-input);
     outline: none;
-    transition: border-color var(--transition-speed), background-color var(--transition-speed);
 }
 
-.message-input:focus {
-    border-color: var(--border-color-focus);
-    background-color: var(--bg-color);
+/* 🚀 Swipe-to-Send Channel Area */
+.swipe-send-channel {
+    position: relative;
+    width: 130px;
+    height: 42px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 21px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    display: flex;
+    align-items: center;
+    padding: 0 2px;
+    user-select: none;
+    overflow: visible;
+    shrink: 0;
 }
 
-/* Circular Blue Send Button (Strict Desktop 48x48) */
-.send-button {
-    width: 48px;
-    height: 48px;
+/* Bouncing Swipe Guide Arrow */
+.swipe-guide-arrow {
+    position: absolute;
+    right: 50px;
+    color: var(--accent-color);
+    font-size: 11px;
+    font-weight: 800;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms ease;
+    white-space: nowrap;
+}
+
+.swipe-guide-arrow.visible {
+    opacity: 0.8;
+    animation: arrowBounce 1.2s infinite ease-in-out;
+}
+
+@keyframes arrowBounce {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-4px); }
+}
+
+/* Swipe Rocket Grab Button */
+.swipe-rocket-btn {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background-color: var(--accent-color);
-    border: none;
+    background: linear-gradient(135deg, #0084ff 0%, #1877f2 100%);
     color: #ffffff;
-    font-size: 15px;
-    cursor: pointer;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color var(--transition-speed), transform 150ms ease;
-    flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+    position: absolute;
+    left: 2px;
+    transition: transform 100ms cubic-bezier(0.175, 0.885, 0.32, 1.1), background-color var(--transition-speed);
+    box-shadow: 0 4px 10px rgba(0, 132, 255, 0.3);
+    z-index: 5;
     outline: none;
-    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.25);
 }
 
-.send-button:hover {
-    background-color: var(--accent-hover);
-    transform: scale(1.04);
+.swipe-rocket-btn:active {
+    cursor: grabbing;
 }
 
-.send-button:active {
-    transform: scale(0.96);
+/* Fire trail exhaust effects on drag */
+.rocket-fire-trail {
+    position: absolute;
+    left: -12px;
+    font-size: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transform: rotate(90deg);
+    transition: opacity 100ms;
+}
+
+.rocket-fire-trail.active {
+    opacity: 0.9;
+    animation: fireFlicker 150ms infinite alternate;
+}
+
+@keyframes fireFlicker {
+    0% { transform: rotate(90deg) scale(0.9); }
+    100% { transform: rotate(90deg) scale(1.2) translateY(1px); }
 }
 
 /* ========================================================
-   LANGUAGE SELECTOR MODAL (Telegram/Whatsapp Styled Popup)
+   FULL SCREEN BLAZING FIRE SCREEN FLASH OVERLAY (0.3s)
+   ======================================================== */
+.fire-screen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(circle, rgba(255,69,0,0.15) 0%, rgba(255,0,0,0.3) 70%, rgba(0,0,0,0.7) 100%);
+    box-shadow: inset 0 0 100px rgba(255,0,0,0.8);
+    transition: opacity 100ms ease-out;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.fire-screen-overlay.active {
+    opacity: 1;
+    animation: screenShake 300ms linear;
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translate(0, 0); }
+    10%, 90% { transform: translate(-4px, 2px); }
+    30%, 70% { transform: translate(4px, -2px); }
+    50% { transform: translate(-2px, -4px); }
+}
+
+/* Climbing Fire Flames at bottom */
+.climbing-flames-canvas {
+    width: 100%;
+    height: 180px;
+    opacity: 0.9;
+}
+
+/* ========================================================
+   LANGUAGE SELECTOR MODAL (Insta/Telegram Styled Popup)
    ======================================================== */
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.7);
     z-index: 100;
     display: flex;
     align-items: center;
@@ -1267,12 +1001,12 @@ body, html {
 }
 
 .modal-card {
-    background-color: var(--bg-sidebar);
+    background-color: #15181F;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     width: 100%;
     max-width: 400px;
-    max-height: 80vh;
+    max-height: 75vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
@@ -1322,6 +1056,40 @@ body, html {
     background-color: var(--bg-header);
 }
 
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    height: 38px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding-left: 36px;
+    padding-right: 16px;
+    color: var(--text-primary);
+    font-size: var(--font-subtitle);
+    outline: none;
+    transition: border-color var(--transition-speed);
+}
+
+.search-input:focus {
+    border-color: var(--accent-color);
+}
+
 /* Language grids scroll panel */
 .modal-body {
     flex-grow: 1;
@@ -1343,7 +1111,6 @@ body, html {
 
 .lang-grid {
     display: grid;
-    grid-cols: 1fr 1fr;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
@@ -1411,93 +1178,46 @@ body, html {
 }
 
 /* ========================================================
-   RESPONSIVE DESIGN (Desktop, Tablet, Mobile)
+   RESPONSIVE LAYOUTS
    ======================================================== */
-
-/* Desktop & Tablet standard views */
-@media (min-width: 768px) {
-    /* Keep everything normal, both sidebar and chat active */
-    .sidebar {
-        transform: none !important;
-    }
-}
-
-/* Mobile View (Strictly <= 767px) */
 @media (max-width: 767px) {
-    /* Set custom typography and header sizing */
     :root {
         --header-height-mobile: 56px;
-        --input-height-mobile: 56px;
+        --input-height-mobile: 68px;
         --font-chat: var(--font-chat-mobile);
     }
     
     .chat-header {
         height: var(--header-height-mobile);
+        padding: 0 12px;
     }
     
     .chat-footer {
         height: var(--input-height-mobile);
+        padding: 0 10px;
     }
     
-    .send-button {
-        width: 44px;
-        height: 44px;
-    }
-    
-    /* Responsive View switching logic (Sidebar slides in/out) */
-    .app-container {
-        overflow: hidden;
-    }
-    
-    .sidebar {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        transform: translateX(-100%);
-        z-index: 30;
-    }
-    
-    .chat-window {
-        width: 100%;
-        height: 100%;
-        transform: translateX(0);
-        transition: transform var(--transition-speed) ease-in-out;
-    }
-    
-    /* When Sidebar is Active */
-    .app-container.sidebar-active .sidebar {
-        transform: translateX(0);
-    }
-    
-    .app-container.sidebar-active .chat-window {
-        transform: translateX(100%);
-    }
-    
-    /* Show Back Button in Mobile Chat Window */
-    .back-button {
-        display: block;
+    .identity-badge {
+        padding: 6px 10px;
     }
 }
 `;
 const JS_CONTENT = `/**
  * ========================================================
- * BhashaSetu Premium Messenger Core Application Logic
- * Production-ready Vanilla JS ES6 matching strict guidelines
+ * BhashaSetu — Immersive Gamified Chat Application
+ * Production-ready Vanilla JS ES6 with Swipe-to-Send & Fire
  * ========================================================
  */
 
 // Application State
 let selectedLanguage = localStorage.getItem("selectedLanguageCode") || "en";
 let selectedLanguageName = localStorage.getItem("selectedLanguageName") || "English";
-let activeChatId = "global-lobby"; // "global-lobby", "announcements", "ai-assistant"
 let languages = [];
 let messagesData = [];
 let refreshTimer = null;
 let timeLeft = 5;
 
-// Client-Side Translation Cache for SWR (Stale-While-Revalidate) 0ms Transitions
+// Client-Side Cache for 0ms transitions (SWR Pattern)
 const clientTranslationCache = {};
 
 // Custom unique anonymous chat identity generator lists
@@ -1506,91 +1226,42 @@ const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast",
 const animals = ["Lion", "Panda", "Fox", "Frog", "Koala", "Monkey", "Unicorn", "Octopus", "Dinosaur", "Sloth", "Owl", "Peacock", "Dolphin"];
 const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
 
-// Mock Static Data for Announcements Room
-const announcementMessages = [
-    {
-        id: "ann_1",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Welcome to BhashaSetu! This is the Announcements room. Here you will find helpful tips about using our real-time multi-lingual message board.",
-        timestamp: "10:00 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    },
-    {
-        id: "ann_2",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Tip 💡: Click the Language button on the top right. Type any sentence like 'Bonjour' or 'Namaste' in the search bar. Our AI will automatically detect the language and suggest it instantly!",
-        timestamp: "10:05 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    },
-    {
-        id: "ann_3",
-        sender: "System Administrator 📢",
-        avatar: "⚙️",
-        translated_text: "Tip 🚀: Click on 'Show Original' link below any translated message to compare translations and inspect the original phrasing in real-time!",
-        timestamp: "10:10 AM",
-        original_lang_name: "English",
-        original_lang: "en"
-    }
-];
-
-// Mock State for AI Assistant Private Chat Room
-const aiAssistantMessages = [
-    {
-        id: "ai_1",
-        sender: "AI Assistant Bot 🤖",
-        avatar: "🤖",
-        translated_text: "Hello! I am your personal multi-lingual AI Assistant. You can message me in any language, and I will converse with you fluently. Try texting me!",
-        timestamp: "12:00 PM",
-        original_lang_name: "English",
-        original_lang: "en"
-    }
-];
-
 // DOM Elements
-const appContainer = document.getElementById("app-container");
-const sidebar = document.getElementById("sidebar");
-const chatWindow = document.getElementById("chat-window");
-
-// Header elements
-const backButton = document.getElementById("back-button");
-const headerAvatar = document.getElementById("header-avatar");
-const headerTitle = document.getElementById("header-title");
-const headerSubtitle = document.getElementById("header-subtitle");
-const openLangModalBtn = document.getElementById("open-lang-modal-btn");
-const currentLangText = document.getElementById("current-lang-text");
-const manualRefreshBtn = document.getElementById("manual-refresh-btn");
-
-// Chat stream & message input
-const messagesContainer = document.getElementById("messages-container");
-const messageForm = document.getElementById("message-form");
-const postText = document.getElementById("post-text");
-const submitBtn = document.getElementById("submit-btn");
-const postAvatar = document.getElementById("post-avatar");
-const postSender = document.getElementById("post-sender");
-const avatarPreview = document.getElementById("avatar-preview");
-const senderDisplay = document.getElementById("sender-display");
-const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
-const countdownIndicator = document.getElementById("countdown-indicator");
-const secondsLeftSpan = document.getElementById("seconds-left");
-
-// Language modal elements
+const openModalBtn = document.getElementById("open-lang-modal-btn");
+const closeModalBtn = document.getElementById("close-lang-modal-btn");
 const langModal = document.getElementById("lang-modal");
-const closeLangModalBtn = document.getElementById("close-lang-modal-btn");
 const langSearchInput = document.getElementById("lang-search-input");
 const aiSuggestionBox = document.getElementById("ai-suggestion-box");
 const aiSuggestionList = document.getElementById("ai-suggestion-list");
 const popularLangsGrid = document.getElementById("popular-languages-grid");
 const allLangsGrid = document.getElementById("all-languages-grid");
+const currentLangText = document.getElementById("current-lang-text");
 
-// Sidebar chat list items
-const chatItems = document.querySelectorAll(".chat-item");
+const messageForm = document.getElementById("message-form");
+const postAvatar = document.getElementById("post-avatar");
+const postSender = document.getElementById("post-sender");
+const avatarPreview = document.getElementById("avatar-preview");
+const senderDisplay = document.getElementById("sender-display");
+const postText = document.getElementById("post-text");
+const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
+
+const messagesContainer = document.getElementById("messages-container");
+const secondsLeftSpan = document.getElementById("seconds-left");
+const manualRefreshBtn = document.getElementById("manual-refresh-btn");
+
+// Drag Elements for Rocket
+const swipeChannel = document.getElementById("swipe-channel");
+const swipeRocket = document.getElementById("swipe-rocket");
+const fireTrail = document.getElementById("fire-trail");
+const swipeGuide = document.getElementById("swipe-guide");
+
+// Full Screen Fire Elements
+const fireOverlay = document.getElementById("fire-overlay");
+const flamesCanvas = document.getElementById("flames-canvas");
+const canvasCtx = flamesCanvas.getContext("2d");
 
 // ========================================================
-// INITIALIZATION & USER CREDENTIALS
+// 👤 INITIALIZE USER CREDENTIALS & IDENTITY
 // ========================================================
 let currentSender = localStorage.getItem("chatSenderName");
 let currentAvatar = localStorage.getItem("chatSenderAvatar") || "🦁";
@@ -1628,272 +1299,369 @@ shuffleIdentityBtn.addEventListener("click", () => {
 });
 
 // ========================================================
-// RESPONSIVE VIEW TOGGLING (MOBILE & DESKTOP)
+// 🔊 REAL-TIME AUDIO SYNTHESIZER (WEB AUDIO API - 100% OFFLINE)
 // ========================================================
-// On Mobile: Click chat item -> Hide sidebar, Show Chat Window
-// Click Back button -> Show sidebar, Hide Chat Window
-function initResponsive() {
-    // Set default mobile view class on initial load
-    if (window.innerWidth <= 767) {
-        appContainer.classList.add("sidebar-active");
+function playRocketLaunchSound(isHighSpeed = false) {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        
+        // Settings based on speed
+        const duration = isHighSpeed ? 0.35 : 0.65;
+        const startFreq = isHighSpeed ? 140 : 80;
+        const endFreq = isHighSpeed ? 1600 : 900;
+        const volume = isHighSpeed ? 0.45 : 0.25;
+        
+        // Lowpass filter for deep motor thrust
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(250, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + duration);
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
+        
+        gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        
+        osc.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    } catch (err) {
+        console.error("Audio synthesis error:", err);
     }
 }
 
-backButton.addEventListener("click", () => {
-    appContainer.classList.add("sidebar-active");
-});
+// ========================================================
+// 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
+// ========================================================
+let flameParticles = [];
+let flameAnimationId = null;
 
-// Handle resize events to prevent stuck states
-window.addEventListener("resize", () => {
-    if (window.innerWidth >= 768) {
-        appContainer.classList.remove("sidebar-active");
-    } else {
-        if (!appContainer.classList.contains("sidebar-active") && activeChatId === "") {
-            appContainer.classList.add("sidebar-active");
+function resizeFlamesCanvas() {
+    flamesCanvas.width = window.innerWidth;
+    flamesCanvas.height = 180;
+}
+window.addEventListener("resize", resizeFlamesCanvas);
+resizeFlamesCanvas();
+
+class FlameParticle {
+    constructor(canvasWidth) {
+        this.x = Math.random() * canvasWidth;
+        this.y = 180;
+        this.speedX = (Math.random() - 0.5) * 6;
+        this.speedY = -(Math.random() * 8 + 4);
+        this.radius = Math.random() * 24 + 10;
+        // Hot flame colors: orange, red, yellow
+        const colors = [
+            "rgba(255, 69, 0, 0.7)",  // Red-orange
+            "rgba(255, 140, 0, 0.6)", // Dark Orange
+            "rgba(255, 215, 0, 0.8)",   // Gold/Yellow
+            "rgba(255, 0, 0, 0.4)"     // Soft red
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.life = 1.0;
+        this.decay = Math.random() * 0.08 + 0.04;
+    }
+    
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life -= this.decay;
+        if (this.radius > 1) this.radius -= 0.6;
+    }
+    
+    draw(ctx) {
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = this.color;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function animateFlames() {
+    canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+    
+    // Spawn 15 particles per frame for intense volume
+    for (let i = 0; i < 15; i++) {
+        flameParticles.push(new FlameParticle(flamesCanvas.width));
+    }
+    
+    flameParticles.forEach((p, idx) => {
+        p.update();
+        p.draw(canvasCtx);
+        if (p.life <= 0 || p.radius <= 0) {
+            flameParticles.splice(idx, 1);
         }
-    }
-});
-
-// ========================================================
-// SIDEBAR ROOM SWITCHING
-// ========================================================
-chatItems.forEach(item => {
-    item.addEventListener("click", () => {
-        // Toggle active styling
-        chatItems.forEach(c => c.classList.remove("active"));
-        item.classList.add("active");
-        
-        // Clear unread badge on click
-        const badge = item.querySelector(".unread-badge");
-        if (badge) badge.classList.add("hidden");
-        
-        const roomId = item.dataset.id;
-        switchRoom(roomId);
     });
-});
-
-function switchRoom(roomId) {
-    activeChatId = roomId;
     
-    // Smooth responsive toggle for mobile
-    if (window.innerWidth <= 767) {
-        appContainer.classList.remove("sidebar-active");
-    }
-    
-    // Update Header
-    if (roomId === "global-lobby") {
-        headerAvatar.textContent = "🌐";
-        headerTitle.textContent = "Global Chat Area";
-        headerSubtitle.textContent = "Auto translating DM Room";
-        messageForm.parentElement.classList.remove("hidden"); // Show input
-        countdownIndicator.classList.remove("hidden");
-        fetchMessages(true);
-    } else if (roomId === "announcements") {
-        headerAvatar.textContent = "📢";
-        headerTitle.textContent = "System Announcements";
-        headerSubtitle.textContent = "Read-only channel • Tips & updates";
-        messageForm.parentElement.classList.add("hidden"); // Read-only
-        countdownIndicator.classList.add("hidden");
-        renderAnnouncements();
-    } else if (roomId === "ai-assistant") {
-        headerAvatar.textContent = "🤖";
-        headerTitle.textContent = "AI Translating Assistant";
-        headerSubtitle.textContent = "Fluent in 130+ languages • Chat privately";
-        messageForm.parentElement.classList.remove("hidden"); // Show input
-        countdownIndicator.classList.add("hidden");
-        renderAIAssistant();
-    }
+    flameAnimationId = requestAnimationFrame(animateFlames);
 }
 
-// ========================================================
-// MESSAGE STREAM RENDER LOGIC
-// ========================================================
-
-// Smooth scroll chat down
-function scrollToBottom() {
+function triggerFireScreenOverlay() {
+    flameParticles = [];
+    fireOverlay.classList.add("active");
+    animateFlames();
+    
+    // Synthesize deep rumble fire roar sound
+    playFireRoarSound();
+    
+    // Exactly 300ms (0.3s) later, stop everything cleanly
     setTimeout(() => {
-        messagesContainer.scrollTo({
-            top: messagesContainer.scrollHeight,
-            behavior: 'smooth'
-        });
-    }, 50);
+        fireOverlay.classList.remove("active");
+        cancelAnimationFrame(flameAnimationId);
+        canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+    }, 300);
 }
 
-// Render Global Lobby messages
-function renderMessages() {
-    if (activeChatId !== "global-lobby") return;
-    
-    if (messagesData.length === 0) {
-        messagesContainer.innerHTML = \`
-            <div class="h-full flex flex-col items-center justify-center text-center p-6 text-neutral-400">
-                <i class="fa-regular fa-comment-dots text-4xl text-neutral-600 mb-2"></i>
-                <h4 class="font-bold text-sm text-neutral-300">No Messages yet</h4>
-                <p class="text-xs max-w-xs mt-1">Be the first to join the chat and write a message in any language!</p>
-            </div>
-        \`;
-        return;
-    }
-
-    messagesContainer.innerHTML = "";
-    
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    messagesData.forEach(msg => {
-        const isMe = msg.sender.includes(currentSender);
-        const isOriginal = msg.original_lang === selectedLanguage;
+function playFireRoarSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const bufferSize = ctx.sampleRate * 0.3; // 0.3s duration buffer
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
         
-        const row = document.createElement("div");
-        row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
-
-        let metaString = isOriginal ? \`Original: \${msg.original_lang_name}\` : \`Translated from \${msg.original_lang_name}\`;
-        const toggleBtnHtml = !isOriginal
-            ? \`<button onclick="toggleOriginal('\${msg.id}')" id="btn-orig-\${msg.id}" class="original-text-link">Show Original</button>\`
-            : '';
-
-        const statusHtml = msg.isPending 
-            ? \`<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>\`
-            : \`<span>\${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>\`;
-
-        row.innerHTML = \`
-            \${!isMe ? \`<span class="message-sender">\${msg.sender}</span>\` : ''}
-            <div class="message-bubble">
-                <div>\${msg.translated_text}</div>
-                
-                <div class="message-meta-info">
-                    \${statusHtml}
-                    <span>•</span>
-                    <span>\${metaString}</span>
-                    \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
-                </div>
-                
-                \${!isOriginal ? \`
-                    <div id="box-orig-\${msg.id}" class="original-collapsible-box hidden">
-                        Original: "\${msg.original_text}"
-                    </div>
-                \` : ''}
-            </div>
-        \`;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-}
-
-// Render Announcements
-function renderAnnouncements() {
-    messagesContainer.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    announcementMessages.forEach(msg => {
-        const row = document.createElement("div");
-        row.className = "message-row incoming";
-        row.innerHTML = \`
-            <span class="message-sender">\${msg.sender}</span>
-            <div class="message-bubble">
-                <div>\${msg.translated_text}</div>
-                <div class="message-meta-info">
-                    <span>\${msg.timestamp}</span>
-                </div>
-            </div>
-        \`;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-    scrollToBottom();
-}
-
-// Render Private AI Assistant
-function renderAIAssistant() {
-    messagesContainer.innerHTML = "";
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    aiAssistantMessages.forEach(msg => {
-        const isMe = msg.isMe;
-        const row = document.createElement("div");
-        row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
+        // Generate brown noise / rumble
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 4.5; // Amplify rumble
+        }
         
-        row.innerHTML = \`
-            \${!isMe ? \`<span class="message-sender">\${msg.sender}</span>\` : ''}
-            <div class="message-bubble">
-                <div>\${msg.translated_text}</div>
-                <div class="message-meta-info">
-                    <span>\${msg.timestamp}</span>
-                </div>
-            </div>
-        \`;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-    scrollToBottom();
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 180; // deep bass rumble
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        noise.start();
+    } catch(e) {}
 }
-
-// Global toggle raw message helper
-window.toggleOriginal = function(msgId) {
-    const box = document.getElementById(\`box-orig-\${msgId}\`);
-    const btn = document.getElementById(\`btn-orig-\${msgId}\`);
-    if (box.classList.contains("hidden")) {
-        box.classList.remove("hidden");
-        btn.textContent = "Hide Original";
-        scrollToBottom();
-    } else {
-        box.classList.add("hidden");
-        btn.textContent = "Show Original";
-    }
-};
 
 // ========================================================
-// SYNC FEED LOGIC WITH STALE-WHILE-REVALIDATE CACHING
+// 🚀 SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
+// ========================================================
+let isDragging = false;
+let startX = 0;
+let dragOffset = 0;
+let swipeStartTime = 0;
+const maxOffset = 88; // Slide limit inside channel
+
+// Show/Hide Bouncing Guide Arrow (Tutorial helper)
+function checkSwipeGuide() {
+    const hasSwiped = localStorage.getItem("hasSwipedBefore") === "true";
+    if (!hasSwiped && postText.value.trim().length > 0) {
+        swipeGuide.classList.add("visible");
+    } else {
+        swipeGuide.classList.remove("visible");
+    }
+}
+
+postText.addEventListener("input", checkSwipeGuide);
+
+// Drag Handler (Supports Mouse & Touch simultaneously)
+function startDrag(e) {
+    isDragging = true;
+    startX = e.clientX || (e.touches && e.touches[0].clientX);
+    swipeStartTime = Date.now();
+    fireTrail.classList.add("active");
+    swipeRocket.style.transition = "none"; // Stop snapping transitions
+    swipeGuide.classList.remove("visible");
+}
+
+function handleDrag(e) {
+    if (!isDragging) return;
+    const currentX = e.clientX || (e.touches && e.touches[0].clientX);
+    dragOffset = currentX - startX;
+    
+    // Lock drag between 0px and maxOffset (right limit)
+    if (dragOffset < 0) dragOffset = 0;
+    if (dragOffset > maxOffset) dragOffset = maxOffset;
+    
+    swipeRocket.style.transform = \`translateX(\${dragOffset}px)\`;
+}
+
+async function endDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    fireTrail.classList.remove("active");
+    
+    const swipeEndTime = Date.now();
+    const swipeDuration = swipeEndTime - swipeStartTime;
+    
+    // Check if dragged past threshold to trigger send
+    if (dragOffset >= 80) {
+        const text = postText.value.trim();
+        if (text) {
+            // Speed calculation
+            const isHighSpeed = swipeDuration < 160; // Swiped very quickly!
+            
+            // Play launching sound & Fire effects!
+            playRocketLaunchSound(isHighSpeed);
+            if (isHighSpeed) {
+                triggerFireScreenOverlay();
+            }
+            
+            // Mark tutorial done
+            localStorage.setItem("hasSwipedBefore", "true");
+            
+            // Deliver Message
+            await sendChatMessage(text);
+        } else {
+            // Snap back if input empty
+            snapRocketBack();
+        }
+    } else {
+        // Snap back if threshold not met
+        snapRocketBack();
+    }
+}
+
+function snapRocketBack() {
+    swipeRocket.style.transition = "transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.25)";
+    swipeRocket.style.transform = "translateX(0px)";
+    dragOffset = 0;
+    checkSwipeGuide();
+}
+
+// Bind Touch/Mouse Event Listeners
+swipeRocket.addEventListener("mousedown", startDrag);
+window.addEventListener("mousemove", handleDrag);
+window.addEventListener("mouseup", endDrag);
+
+swipeRocket.addEventListener("touchstart", startDrag, { passive: true });
+window.addEventListener("touchmove", handleDrag, { passive: false });
+window.addEventListener("touchend", endDrag);
+
+// ========================================================
+// 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
+// ========================================================
+async function sendChatMessage(text) {
+    // Clear input box immediately (0ms response time!)
+    postText.value = "";
+    snapRocketBack();
+    
+    const tempMsgId = \`temp_\${Date.now()}\`;
+    const optimisticMsg = {
+        id: tempMsgId,
+        sender: \`\${currentAvatar} \${currentSender}\`,
+        avatar: currentAvatar,
+        text: text,
+        original_text: text,
+        original_lang: selectedLanguage,
+        original_lang_name: selectedLanguageName,
+        translated_text: text,
+        timestamp: "sending...",
+        isPending: true
+    };
+    
+    // Instant UI injection
+    messagesData.push(optimisticMsg);
+    renderMessages();
+    scrollToBottom();
+    
+    try {
+        const response = await fetch("/api/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sender: \`\${currentAvatar} \${currentSender}\`, avatar: currentAvatar, text })
+        });
+        
+        if (response.ok) {
+            const serverMsg = await response.json();
+            const index = messagesData.findIndex(m => m.id === tempMsgId);
+            if (index !== -1) {
+                messagesData[index] = {
+                    id: serverMsg.id,
+                    sender: serverMsg.sender,
+                    avatar: serverMsg.avatar,
+                    original_text: serverMsg.text,
+                    original_lang: serverMsg.original_lang,
+                    original_lang_name: serverMsg.original_lang_name,
+                    translated_text: serverMsg.text,
+                    timestamp: serverMsg.timestamp
+                };
+            }
+            clientTranslationCache[selectedLanguage] = messagesData;
+            renderMessages();
+        } else {
+            messagesData = messagesData.filter(m => m.id !== tempMsgId);
+            renderMessages();
+            alert("Message Delivery Failed");
+        }
+    } catch (err) {
+        console.error(err);
+        messagesData = messagesData.filter(m => m.id !== tempMsgId);
+        renderMessages();
+    }
+}
+
+// ========================================================
+// 🔄 STALE-WHILE-REVALIDATE REFRESH LOOPS
 // ========================================================
 async function fetchMessages(forceScroll = false) {
-    if (activeChatId !== "global-lobby") return;
-
-    // SWR Cache optimization: Render immediately if cached
+    // SWR Cache trigger (0ms transition)
     if (clientTranslationCache[selectedLanguage]) {
         messagesData = clientTranslationCache[selectedLanguage];
         renderMessages();
         if (forceScroll) scrollToBottom();
     }
 
-    // Refresh in background
     try {
-        openLangModalBtn.classList.add("animate-pulse");
+        openModalBtn.classList.add("animate-pulse");
 
         const res = await fetch(\`/api/messages?lang=\${selectedLanguage}\`);
         const data = await res.json();
         
-        openLangModalBtn.classList.remove("animate-pulse");
+        openModalBtn.classList.remove("animate-pulse");
 
         const isNewMessageAdded = data.messages.length !== messagesData.length;
         messagesData = data.messages;
         
-        // Write into cache
         clientTranslationCache[selectedLanguage] = messagesData;
-        
         renderMessages();
         
         if (isNewMessageAdded || forceScroll) {
             scrollToBottom();
         }
     } catch (err) {
-        console.error("Failed to load feed:", err);
-        openLangModalBtn.classList.remove("animate-pulse");
+        console.error("Sync error:", err);
+        openModalBtn.classList.remove("animate-pulse");
     }
 }
 
-// Countdown timer loop
 function startAutoRefreshTimer() {
     if (refreshTimer) clearInterval(refreshTimer);
     timeLeft = 5;
     secondsLeftSpan.textContent = timeLeft;
     
     refreshTimer = setInterval(() => {
-        if (activeChatId !== "global-lobby") return;
-        
         timeLeft--;
         if (timeLeft <= 0) {
             timeLeft = 5;
@@ -1912,136 +1680,7 @@ manualRefreshBtn.addEventListener("click", () => {
 });
 
 // ========================================================
-// SEND MESSAGE & AI CHAT SIMULATOR
-// ========================================================
-messageForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = postText.value.trim();
-    if (!text) return;
-    
-    if (activeChatId === "global-lobby") {
-        // Optimistic UI update (0ms immediate response)
-        const tempMsgId = \`temp_\${Date.now()}\`;
-        const optimisticMsg = {
-            id: tempMsgId,
-            sender: \`\${currentAvatar} \${currentSender}\`,
-            avatar: currentAvatar,
-            text: text,
-            original_text: text,
-            original_lang: selectedLanguage,
-            original_lang_name: selectedLanguageName,
-            translated_text: text,
-            timestamp: "sending...",
-            isPending: true
-        };
-        
-        messagesData.push(optimisticMsg);
-        renderMessages();
-        scrollToBottom();
-        
-        postText.value = ""; // Clear box instantly
-        
-        try {
-            const response = await fetch("/api/messages", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ sender: \`\${currentAvatar} \${currentSender}\`, avatar: currentAvatar, text })
-            });
-            
-            if (response.ok) {
-                const serverMsg = await response.json();
-                const index = messagesData.findIndex(m => m.id === tempMsgId);
-                if (index !== -1) {
-                    messagesData[index] = {
-                        id: serverMsg.id,
-                        sender: serverMsg.sender,
-                        avatar: serverMsg.avatar,
-                        original_text: serverMsg.text,
-                        original_lang: serverMsg.original_lang,
-                        original_lang_name: serverMsg.original_lang_name,
-                        translated_text: serverMsg.text,
-                        timestamp: serverMsg.timestamp
-                    };
-                }
-                clientTranslationCache[selectedLanguage] = messagesData;
-                renderMessages();
-            } else {
-                messagesData = messagesData.filter(m => m.id !== tempMsgId);
-                renderMessages();
-                alert("Delivery failed");
-            }
-        } catch (err) {
-            console.error(err);
-            messagesData = messagesData.filter(m => m.id !== tempMsgId);
-            renderMessages();
-        }
-    } 
-    else if (activeChatId === "ai-assistant") {
-        // Send message to AI Assistant
-        const userMsg = {
-            id: \`usr_\${Date.now()}\`,
-            sender: \`\${currentAvatar} \${currentSender}\`,
-            isMe: true,
-            translated_text: text,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        aiAssistantMessages.push(userMsg);
-        renderAIAssistant();
-        postText.value = "";
-        
-        // Show Typing indicator!
-        showAITypingIndicator();
-        
-        // Trigger private AI assistant response (simulated translated chat)
-        setTimeout(async () => {
-            removeAITypingIndicator();
-            
-            // Translate the reply based on the active language
-            let aiReplyText = "I have translated your message. You are speaking wonderfully!";
-            try {
-                const transUrl = \`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=\${selectedLanguage}&dt=t&q=\${encodeURIComponent("Hello! I received your message: '" + text + "'. I can talk to you in any language. Your translation system is 100% active and running on Cloudflare Edge!")}\`;
-                const res = await fetch(transUrl);
-                const json = await res.json();
-                aiReplyText = json[0].map(s => s && s[0] ? s[0] : "").join("");
-            } catch (err) {}
-
-            const aiMsg = {
-                id: \`ai_\${Date.now()}\`,
-                sender: "AI Assistant Bot 🤖",
-                isMe: false,
-                translated_text: aiReplyText,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            aiAssistantMessages.push(aiMsg);
-            renderAIAssistant();
-        }, 1500);
-    }
-});
-
-// Typing Indicator helpers
-function showAITypingIndicator() {
-    const indicator = document.createElement("div");
-    indicator.className = "message-row incoming";
-    indicator.id = "ai-typing-row";
-    indicator.innerHTML = \`
-        <span class="message-sender">AI Assistant Bot 🤖</span>
-        <div class="typing-bubble">
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-            <span class="typing-dot"></span>
-        </div>
-    \`;
-    messagesContainer.querySelector(".chat-messages-inner").appendChild(indicator);
-    scrollToBottom();
-}
-
-function removeAITypingIndicator() {
-    const indicator = document.getElementById("ai-typing-row");
-    if (indicator) indicator.remove();
-}
-
-// ========================================================
-// LANGUAGE SELECTION MODAL LOGIC
+// 🌍 LANGUAGE SELECT MODAL LOGIC
 // ========================================================
 async function fetchLanguages() {
     try {
@@ -2066,10 +1705,8 @@ function renderLanguages(filter = "") {
         const isSelected = selectedLanguage === code;
         
         const matches = name.toLowerCase().includes(cleanFilter) || code.toLowerCase().includes(cleanFilter);
-        
         const btnClass = isSelected ? "lang-btn active" : "lang-btn";
 
-        // Popular
         if (popularCodes.includes(code) && !cleanFilter) {
             const btn = document.createElement("button");
             btn.type = "button";
@@ -2079,7 +1716,6 @@ function renderLanguages(filter = "") {
             popularLangsGrid.appendChild(btn);
         }
 
-        // All
         if (matches) {
             matchCount++;
             const btn = document.createElement("button");
@@ -2159,8 +1795,8 @@ function closeLanguageModal() {
     langModal.classList.remove("active");
 }
 
-openLangModalBtn.addEventListener("click", openLanguageModal);
-closeLangModalBtn.addEventListener("click", closeLanguageModal);
+openModalBtn.addEventListener("click", openLanguageModal);
+closeModalBtn.addEventListener("click", closeLanguageModal);
 
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && langModal.classList.contains("active")) closeLanguageModal();
@@ -2170,14 +1806,13 @@ langModal.addEventListener("click", (e) => {
 });
 
 // ========================================================
-// INITIAL BOOTSTRAP
+// 🚀 BOOTSTRAP LOGIC
 // ========================================================
 (async function init() {
     currentLangText.textContent = selectedLanguageName;
     
-    initResponsive();
     await fetchLanguages();
-    switchRoom("global-lobby");
+    await fetchMessages(true); // Initial load scroll to bottom
     startAutoRefreshTimer();
 })();
 `;

@@ -3,122 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BhashaSetu — Premium Chat Messenger</title>
-    <!-- Google Fonts for elite, clean Inter typography -->
+    <title>BhashaSetu — Premium Universal Chat Room</title>
+    <!-- Google Fonts for Inter typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome for robust, clean vector icons -->
+    <!-- FontAwesome for neat icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Linked Custom CSS -->
+    <!-- Linked Custom Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Main Container -->
+    <!-- Full Screen Blazing Fire Overlay (Triggered on high-speed swipe) -->
+    <div id="fire-overlay" class="fire-screen-overlay">
+        <!-- Canvas to draw realistic climbing fire flames -->
+        <canvas id="flames-canvas" class="climbing-flames-canvas"></canvas>
+    </div>
+
+    <!-- App Container -->
     <div class="app-container" id="app-container">
 
         <!-- ==========================================
-             LEFT PANEL: SIDEBAR
-             ========================================== -->
-        <aside class="sidebar" id="sidebar">
-            
-            <!-- Sidebar Header & Search Box -->
-            <div class="sidebar-search-container">
-                <div class="search-wrapper">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="sidebar-search" class="search-input" placeholder="Search chats...">
-                </div>
-            </div>
-
-            <!-- Chat Channels List -->
-            <div class="chat-list custom-scroll">
-                
-                <!-- Chat Item 1: Global Message Board -->
-                <div class="chat-item active" data-id="global-lobby">
-                    <div class="avatar-container">
-                        <div class="avatar">🌐</div>
-                        <span class="status-online"></span>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">Global Chat Area</span>
-                            <span class="chat-meta-time">5s sync</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Auto translating DM Room...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Item 2: AI Assistant Bot -->
-                <div class="chat-item" data-id="ai-assistant">
-                    <div class="avatar-container">
-                        <div class="avatar">🤖</div>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">AI Assistant Bot</span>
-                            <span class="chat-meta-time">Online</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Text me in any language!</span>
-                            <span class="unread-badge">1</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Item 3: Announcements Room -->
-                <div class="chat-item" data-id="announcements">
-                    <div class="avatar-container">
-                        <div class="avatar">📢</div>
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-row-top">
-                            <span class="chat-name">Announcements</span>
-                            <span class="chat-meta-time">Read-only</span>
-                        </div>
-                        <div class="chat-row-bottom">
-                            <span class="chat-preview">Welcome tips and guide lines...</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </aside>
-
-        <!-- ==========================================
-             RIGHT PANEL: CHAT WINDOW
+             CHAT WINDOW MAIN COLUMN (100% Width Layout)
              ========================================== -->
         <main class="chat-window" id="chat-window">
 
-            <!-- Chat Window Header -->
+            <!-- Chat Header -->
             <header class="chat-header">
                 <div class="header-left">
-                    <!-- Mobile Back button -->
-                    <button class="back-button" id="back-button" title="Back to Sidebar">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                    <!-- Header Avatar -->
-                    <div class="header-avatar" id="header-avatar">🌐</div>
-                    <!-- Details -->
+                    <div class="header-avatar">🌐</div>
                     <div class="header-details">
-                        <h2 class="header-title" id="header-title">Global Chat Area</h2>
-                        <p class="header-subtitle" id="header-subtitle">Auto translating DM Room</p>
+                        <h2 class="header-title">BhashaSetu Global Chat</h2>
+                        <p class="header-subtitle">Auto Translating Group Chat Room</p>
                     </div>
                 </div>
 
                 <!-- Header Actions Panel -->
                 <div class="header-actions">
-                    <!-- Sync Indicator & Countdown -->
+                    <!-- Sync Indicator -->
                     <span class="text-[10px] text-neutral-400 font-mono hidden sm:inline" id="countdown-indicator">
                         Syncing in <span id="seconds-left">5</span>s
                     </span>
-                    <!-- Manual Refresh -->
+                    <!-- Manual Sync -->
                     <button id="manual-refresh-btn" class="header-icon-btn" title="Force Sync Feed">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
-                    <!-- Language Picker Trigger -->
+                    <!-- Language Selection Trigger -->
                     <button id="open-lang-modal-btn" class="header-btn" title="Choose Translation Language">
                         <i class="fa-solid fa-language"></i>
                         <span id="current-lang-text">English (en)</span>
@@ -126,36 +57,45 @@
                 </div>
             </header>
 
-            <!-- Scrollable Messages Container with Vector SVG Pattern background -->
+            <!-- Scrollable Messages Container with Vector SVG Wallpaper -->
             <section class="chat-messages-container custom-scroll" id="messages-container">
-                <!-- Message row bubbles injected here dynamically by app.js -->
+                <!-- Chat bubbles are injected here by app.js -->
             </section>
 
-            <!-- Bottom Sticky Input Bar Area -->
+            <!-- Bottom Sticky Chat Footer Area -->
             <footer class="chat-footer">
                 <div class="input-row">
                     
-                    <!-- Quick Identity Indicator & Dice Toggle -->
-                    <button type="button" id="shuffle-identity-btn" class="identity-badge" title="Click to randomize your nickname">
+                    <!-- Quick Identity Indicator & Dice Shuffle -->
+                    <button type="button" id="shuffle-identity-btn" class="identity-badge" title="Tap to randomize your nickname">
                         <span id="avatar-preview" class="identity-avatar">🦁</span>
                         <span id="sender-display" class="identity-name">Toofani Panda</span>
                         <i class="fa-solid fa-dice text-neutral-400 text-[10px]"></i>
                     </button>
                     
-                    <!-- Text Message input and Send button -->
+                    <!-- Unified Input Container -->
                     <div class="footer-input-container">
                         <!-- Hidden Identity Credentials -->
                         <input type="hidden" id="post-avatar" value="🦁">
                         <input type="hidden" id="post-sender" value="🦁 Anonymous">
 
-                        <form id="message-form" class="flex-grow flex items-center gap-2">
-                            <input type="text" id="post-text" required autocomplete="off" class="message-input" placeholder="Type a message in any bhasha...">
+                        <!-- Text Field -->
+                        <input type="text" id="post-text" required autocomplete="off" class="message-input" placeholder="Type message in any language...">
+                        
+                        <!-- 🚀 Revolutionary SWIPE-TO-SEND ROCKET Channel -->
+                        <div id="swipe-channel" class="swipe-send-channel" title="Swipe rocket right to send!">
+                            <!-- Bouncing Tutorial Arrow Guide -->
+                            <div id="swipe-guide" class="swipe-guide-arrow">
+                                <i class="fa-solid fa-angles-left"></i> Swipe
+                            </div>
                             
-                            <!-- Circular Blue Send Button -->
-                            <button type="submit" id="submit-btn" class="send-button" title="Send Message">
-                                <i class="fa-solid fa-paper-plane"></i>
-                            </button>
-                        </form>
+                            <!-- Grabbable Rocket handle button -->
+                            <div id="swipe-rocket" class="swipe-rocket-btn">
+                                <i class="fa-solid fa-rocket"></i>
+                                <!-- Embedded Fire exhaust trail -->
+                                <span id="fire-trail" class="rocket-fire-trail">🔥</span>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -166,7 +106,7 @@
     </div>
 
     <!-- ==========================================
-         LANGUAGE SELECTOR MODAL (Insta/Telegram Style)
+         LANGUAGE SELECTOR POPUP MODAL
          ========================================== -->
     <div id="lang-modal" class="modal-overlay">
         <div class="modal-card">
@@ -176,7 +116,7 @@
                 <button id="close-lang-modal-btn" class="modal-close-btn">Close</button>
             </div>
 
-            <!-- Search bar -->
+            <!-- Search Field -->
             <div class="modal-search-box">
                 <div class="search-wrapper">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -187,12 +127,12 @@
                 <div id="ai-suggestion-box" class="ai-suggest-container mt-2.5 hidden">
                     <span class="modal-sub-title"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Suggested:</span>
                     <div id="ai-suggestion-list" class="ai-suggest-chips">
-                        <!-- AI suggested chips -->
+                        <!-- AI suggestions -->
                     </div>
                 </div>
             </div>
 
-            <!-- Body list content -->
+            <!-- Body grid list -->
             <div class="modal-body custom-scroll">
                 <!-- Popular list -->
                 <div>
@@ -202,7 +142,7 @@
                     </div>
                 </div>
 
-                <!-- All Languages list -->
+                <!-- All list -->
                 <div>
                     <h4 class="modal-sub-title" id="all-langs-header">All Languages</h4>
                     <div class="lang-grid" id="all-languages-grid">
@@ -213,7 +153,7 @@
         </div>
     </div>
 
-    <!-- Linked Custom JS App Logic -->
+    <!-- Linked JS App Logic -->
     <script src="app.js"></script>
 </body>
 </html>
