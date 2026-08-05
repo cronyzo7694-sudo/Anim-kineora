@@ -1,0 +1,47 @@
+[
+  {
+    "id": "msg_1",
+    "sender": "Toofani Panda",
+    "avatar": "🐼",
+    "text": "नमस्ते दोस्तो! इस मंच पर आपका स्वागत है। आप यहाँ बिना किसी अकाउंट के अपनी भाषा में लिख सकते हैं और यह सबके लिए तुरंत अनुवादित हो जाएगा।",
+    "original_lang": "hi",
+    "original_lang_name": "Hindi",
+    "timestamp": "2026-08-05 15:35:10"
+  },
+  {
+    "id": "msg_2",
+    "sender": "Shanti Fox",
+    "avatar": "🦊",
+    "text": "¡Hola a todos! Esta es una aplicación increíble. ¡La traducción en tiempo real es extremadamente rápida y no cambia el significado original!",
+    "original_lang": "es",
+    "original_lang_name": "Spanish",
+    "timestamp": "2026-08-05 15:36:20"
+  },
+  {
+    "id": "msg_3",
+    "sender": "Smart Dolphin",
+    "avatar": "🐬",
+    "text": "Bonjour du monde entier ! C'est magique de pouvoir communiquer sans aucune barrière linguistique. Essayez de choisir votre langue en haut !",
+    "original_lang": "fr",
+    "original_lang_name": "French",
+    "timestamp": "2026-08-05 15:37:45"
+  },
+  {
+    "id": "msg_4",
+    "sender": "Jugaadi Dinosaur",
+    "avatar": "🦕",
+    "text": "こんにちは！世界中の人々とお互いの母国語でリアルタイムに話せるなんて、本当に素晴らしい技術ですね！",
+    "original_lang": "ja",
+    "original_lang_name": "Japanese",
+    "timestamp": "2026-08-05 15:39:00"
+  },
+  {
+    "id": "msg_1785944657818",
+    "sender": "🦉 Dhakad Unicorn",
+    "avatar": "🦉",
+    "text": "hii",
+    "original_lang": "en",
+    "original_lang_name": "English",
+    "timestamp": "2026-08-05 15:44:17"
+  }
+]

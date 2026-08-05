@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BhashaSetu — Universal Chat Room</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for elite, elegant typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for highly-refined icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #fbfbfc 50%, #e8ecf2 100%);
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+        /* Custom scrollbar for beautiful chat box */
+        .chat-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #e1e1e6;
+            border-radius: 10px;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb:hover {
+            background: #cdd1da;
+        }
+        /* Glassmorphism details */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Top Premium Notification & Custom Header Area -->
+    <div id="page-header" class="bg-white/70 backdrop-blur-md border-b border-neutral-200/60 transition-all duration-500 max-h-32 opacity-100 overflow-hidden shrink-0">
+        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <!-- App Logo with Subtle Text Gradient -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#0084ff] to-[#1877f2] flex items-center justify-center text-white text-xs font-black shadow-sm">
+                    BS
+                </div>
+                <div>
+                    <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-neutral-950 via-neutral-800 to-neutral-600 bg-clip-text text-transparent">
+                        BhashaSetu
+                    </h1>
+                    <p class="text-[10px] text-neutral-400 font-medium tracking-wide">Universal real-time DM platform</p>
+                </div>
+            </div>
+
+            <!-- Page Meta Info & Help -->
+            <div class="text-right hidden sm:block">
+                <p class="text-[11px] font-semibold text-neutral-700">Duniya ki koi bhi language</p>
+                <p class="text-[10px] text-neutral-400">Real-time translations without losing original essence</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Area -->
+    <main class="flex-grow max-w-4xl w-full mx-auto flex flex-col px-4 py-4 md:py-6 overflow-hidden">
+        
+        <!-- Controls & Floating Toggles Bar -->
+        <div class="flex items-center justify-between px-2 mb-3 shrink-0">
+            <!-- Left Side: Dynamic Status Badge -->
+            <div class="flex items-center gap-2">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-[10px] font-bold tracking-wider text-neutral-500 uppercase">Live Global DM Thread</span>
+            </div>
+
+            <!-- Right Side: Minimal Action Toggles (Toggle Header, Refresh) -->
+            <div class="flex items-center gap-3">
+                <!-- Sync indicator -->
+                <span class="text-[10px] text-neutral-400 hidden sm:inline">Syncing in <strong id="seconds-left" class="text-neutral-700">5</strong>s</span>
+                
+                <!-- Toggle Header Button (DIL KHUSH OPTION) -->
+                <button id="toggle-header-btn" class="text-[11px] font-semibold text-neutral-500 hover:text-neutral-900 bg-white border border-neutral-200 hover:border-neutral-300 px-3 py-1.5 rounded-full shadow-xs flex items-center gap-1.5 transition-all">
+                    <i id="toggle-header-icon" class="fa-solid fa-eye-slash text-[10px]"></i>
+                    <span id="toggle-header-text">Hide Header</span>
+                </button>
+
+                <!-- Change Chat Language Button -->
+                <button id="open-lang-modal-btn" class="bg-gradient-to-r from-neutral-900 to-neutral-800 hover:from-neutral-800 hover:to-neutral-700 text-white text-[11px] font-bold px-4 py-1.5 rounded-full shadow-sm transition-all active:scale-95 flex items-center gap-1.5">
+                    <i class="fa-solid fa-language text-xs text-neutral-300"></i>
+                    <span id="current-lang-text">English (en)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Master Chat Box (iOS/Instagram Luxury Glassmorphism card) -->
+        <div class="flex-grow flex flex-col glass-panel rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-white/80 overflow-hidden">
+            
+            <!-- Chat Inside Header -->
+            <div class="bg-white/40 border-b border-neutral-200/50 px-5 py-3 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <!-- Circular Icon -->
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-[#00c6ff] to-[#0072ff] flex items-center justify-center text-white text-sm font-bold shadow-xs">
+                        <i class="fa-solid fa-comments text-xs"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-neutral-800">Global Chat Area</div>
+                        <div class="text-[9px] text-neutral-400 font-semibold uppercase tracking-wider">No account required • Anyone can post</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="manual-refresh-btn" class="text-neutral-400 hover:text-neutral-800 p-2 rounded-lg transition-colors" title="Force Sync Feed">
+                        <i class="fa-solid fa-rotate-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Stream Thread (Clean minimalist background) -->
+            <div id="messages-container" class="flex-grow overflow-y-auto chat-scroll bg-gradient-to-b from-[#f9fafb] to-[#f3f4f6] px-5 py-6 space-y-5">
+                <!-- Loaded bubbles inserted dynamically -->
+                <div class="flex flex-col items-center justify-center h-full text-neutral-400 space-y-2">
+                    <i class="fa-solid fa-circle-notch animate-spin text-xl text-neutral-300"></i>
+                    <p class="text-[11px] font-medium tracking-wide">Syncing universal server stream...</p>
+                </div>
+            </div>
+
+            <!-- Chat Sticky Footer (Instagram styled luxury bar) -->
+            <div class="bg-white/80 border-t border-neutral-200/50 p-4 shrink-0">
+                <form id="message-form" class="max-w-3xl mx-auto flex items-center gap-3">
+                    
+                    <!-- Premium Identity Selector -->
+                    <button type="button" id="shuffle-identity-btn" class="flex items-center gap-2 px-3.5 py-2 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/60 rounded-full transition-all shrink-0 group shadow-xs" title="Shuffle identity">
+                        <span id="avatar-preview" class="text-xs">🦁</span>
+                        <span id="sender-display" class="text-[11px] font-bold text-neutral-600 hidden sm:inline">Toofani Panda</span>
+                        <i class="fa-solid fa-dice text-[11px] text-neutral-400 group-hover:text-neutral-600 transition-colors"></i>
+                    </button>
+                    
+                    <!-- Hidden credentials -->
+                    <input type="hidden" id="post-avatar" value="🦁">
+                    <input type="hidden" id="post-sender" value="🦁 Anonymous">
+
+                    <!-- Chat Message Input -->
+                    <div class="flex-grow relative flex items-center">
+                        <input type="text" id="post-text" required autocomplete="off" 
+                               class="w-full bg-neutral-50 focus:bg-white text-xs text-neutral-800 pl-4.5 pr-12 py-3 rounded-full border border-neutral-200/80 focus:border-neutral-400 focus:outline-none transition-all placeholder:text-neutral-400 shadow-xs" 
+                               placeholder="Type message in your own language (Hindi, French, Spanish, Arabic, etc.)...">
+                               
+                        <!-- Instagram circular blue gradient send button -->
+                        <button type="submit" id="submit-btn" 
+                                class="absolute right-1.5 w-8 h-8 rounded-full bg-gradient-to-tr from-[#0084ff] to-[#1877f2] hover:shadow-md hover:shadow-[#0084ff]/10 text-white flex items-center justify-center transition-all duration-150 active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+        </div>
+    </main>
+
+    <!-- Language Selector Popup Modal -->
+    <div id="lang-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs hidden transition-all duration-200 opacity-0">
+        <!-- Modal Card -->
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh] border border-neutral-200 transform scale-95 transition-transform duration-200">
+            <!-- Header -->
+            <div class="px-5 py-4 border-b border-neutral-100 flex items-center justify-between shrink-0">
+                <div>
+                    <h3 class="text-xs font-bold text-neutral-800">Select Board Language</h3>
+                    <p class="text-[9px] text-neutral-400 font-medium">Messages translate instantly to this target language.</p>
+                </div>
+                <button id="close-lang-modal-btn" class="text-[10px] text-neutral-500 hover:text-neutral-900 font-bold bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-full transition-all">
+                    Dismiss
+                </button>
+            </div>
+
+            <!-- Search Area with AI Suggestion -->
+            <div class="p-4 border-b border-neutral-100 bg-[#f9fafb]">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 text-xs"></i>
+                    <input type="text" id="lang-search-input" class="w-full bg-white text-xs text-neutral-800 pl-9 pr-4 py-2.5 rounded-full border border-neutral-200 focus:border-neutral-300 focus:outline-none transition-all" placeholder="Search language name or write text to auto-detect...">
+                </div>
+                
+                <!-- AI Smart suggestions box -->
+                <div id="ai-suggestion-box" class="mt-2.5 hidden">
+                    <div class="text-[9px] text-[#0084ff] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-wand-magic-sparkles animate-pulse"></i> AI Suggested Bhasha:
+                    </div>
+                    <div id="ai-suggestion-list" class="flex flex-wrap gap-1.5">
+                        <!-- AI suggestions injected -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Languages List -->
+            <div class="p-4 overflow-y-auto chat-scroll flex-grow space-y-4 bg-white">
+                <!-- Popular -->
+                <div>
+                    <h4 class="text-[9px] text-neutral-400 uppercase tracking-wider font-bold mb-2">Popular Languages</h4>
+                    <div class="grid grid-cols-2 gap-1.5" id="popular-languages-grid">
+                        <!-- Popular buttons inserted -->
+                    </div>
+                </div>
+
+                <!-- All Languages -->
+                <div>
+                    <h4 class="text-[9px] text-neutral-400 uppercase tracking-wider font-bold mb-2" id="all-langs-header">All Languages</h4>
+                    <div class="grid grid-cols-2 gap-1.5" id="all-languages-grid">
+                        <!-- All languages buttons inserted -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elegant Muted Footer -->
+    <footer id="page-footer" class="border-t border-neutral-200/50 bg-white/40 py-4 text-center text-[10px] text-neutral-400 transition-all duration-500 max-h-16 opacity-100 shrink-0">
+        <div class="max-w-4xl mx-auto px-6 flex items-center justify-between">
+            <p>© 2026 BhashaSetu. Free multi-lingual DM room.</p>
+            <p>Designed for absolute simplicity and modern speed.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State
+        let selectedLanguage = localStorage.getItem("selectedLanguageCode") || "en";
+        let selectedLanguageName = localStorage.getItem("selectedLanguageName") || "English";
+        let languages = [];
+        let messagesData = [];
+        let refreshTimer = null;
+        let timeLeft = 5;
+        let headerVisible = localStorage.getItem("headerVisible") !== "false";
+
+        // Unique Chat User Identity lists
+        const avatars = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
+        const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast", "Dhakad", "Chalaak", "Shanti", "Gabru", "Naughty", "Shana", "Smart", "Cool"];
+        const animals = ["Lion", "Panda", "Fox", "Frog", "Koala", "Monkey", "Unicorn", "Octopus", "Dinosaur", "Sloth", "Owl", "Peacock", "Dolphin"];
+        const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
+
+        // DOM elements
+        const pageHeader = document.getElementById("page-header");
+        const pageFooter = document.getElementById("page-footer");
+        const toggleHeaderBtn = document.getElementById("toggle-header-btn");
+        const toggleHeaderIcon = document.getElementById("toggle-header-icon");
+        const toggleHeaderText = document.getElementById("toggle-header-text");
+
+        const openModalBtn = document.getElementById("open-lang-modal-btn");
+        const closeModalBtn = document.getElementById("close-lang-modal-btn");
+        const langModal = document.getElementById("lang-modal");
+        const langSearchInput = document.getElementById("lang-search-input");
+        const aiSuggestionBox = document.getElementById("ai-suggestion-box");
+        const aiSuggestionList = document.getElementById("ai-suggestion-list");
+        const popularLangsGrid = document.getElementById("popular-languages-grid");
+        const allLangsGrid = document.getElementById("all-languages-grid");
+        const currentLangText = document.getElementById("current-lang-text");
+        
+        const messageForm = document.getElementById("message-form");
+        const postAvatar = document.getElementById("post-avatar");
+        const postSender = document.getElementById("post-sender");
+        const avatarPreview = document.getElementById("avatar-preview");
+        const senderDisplay = document.getElementById("sender-display");
+        const postText = document.getElementById("post-text");
+        const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
+        
+        const messagesContainer = document.getElementById("messages-container");
+        const secondsLeftSpan = document.getElementById("seconds-left");
+        const manualRefreshBtn = document.getElementById("manual-refresh-btn");
+
+        // Header Visibility toggler handler (DIL KHUSH OPTION)
+        function applyHeaderVisibility() {
+            if (headerVisible) {
+                pageHeader.classList.remove("max-h-0", "opacity-0", "py-0", "border-none");
+                pageHeader.classList.add("max-h-32", "opacity-100");
+                pageFooter.classList.remove("max-h-0", "opacity-0", "py-0", "border-none");
+                pageFooter.classList.add("max-h-16", "opacity-100");
+                toggleHeaderIcon.className = "fa-solid fa-eye-slash text-[10px]";
+                toggleHeaderText.textContent = "Hide Header";
+            } else {
+                pageHeader.classList.remove("max-h-32", "opacity-100");
+                pageHeader.classList.add("max-h-0", "opacity-0", "py-0", "border-none");
+                pageFooter.classList.remove("max-h-16", "opacity-100");
+                pageFooter.classList.add("max-h-0", "opacity-0", "py-0", "border-none");
+                toggleHeaderIcon.className = "fa-solid fa-eye text-[10px]";
+                toggleHeaderText.textContent = "Show Header";
+            }
+            localStorage.setItem("headerVisible", headerVisible);
+        }
+
+        toggleHeaderBtn.addEventListener("click", () => {
+            headerVisible = !headerVisible;
+            applyHeaderVisibility();
+        });
+
+        // Set or load persistent user identity
+        let currentSender = localStorage.getItem("chatSenderName");
+        let currentAvatar = localStorage.getItem("chatSenderAvatar") || "🦁";
+
+        function setIdentity(avatar, name) {
+            currentAvatar = avatar;
+            currentSender = name;
+            localStorage.setItem("chatSenderAvatar", avatar);
+            localStorage.setItem("chatSenderName", name);
+            
+            postAvatar.value = avatar;
+            postSender.value = `${avatar} ${name}`;
+            avatarPreview.textContent = avatar;
+            senderDisplay.textContent = name;
+        }
+
+        function shuffleIdentity() {
+            const avatar = avatars[Math.floor(Math.random() * avatars.length)];
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const animal = animals[Math.floor(Math.random() * animals.length)];
+            const name = `${adj} ${animal}`;
+            setIdentity(avatar, name);
+        }
+
+        if (!currentSender) {
+            shuffleIdentity();
+        } else {
+            setIdentity(currentAvatar, currentSender);
+        }
+
+        shuffleIdentityBtn.addEventListener("click", () => {
+            shuffleIdentity();
+            shuffleIdentityBtn.classList.add("scale-95");
+            setTimeout(() => shuffleIdentityBtn.classList.remove("scale-95"), 100);
+        });
+
+        // Fetch languages
+        async function fetchLanguages() {
+            try {
+                const res = await fetch("/api/languages");
+                const data = await res.json();
+                languages = data.languages;
+                renderLanguages();
+            } catch (err) {
+                console.error("Failed to load languages list:", err);
+            }
+        }
+
+        function selectLanguage(code, name) {
+            selectedLanguage = code;
+            selectedLanguageName = name;
+            localStorage.setItem("selectedLanguageCode", code);
+            localStorage.setItem("selectedLanguageName", name);
+            
+            currentLangText.textContent = name;
+            fetchMessages(true);
+            closeLanguageModal();
+        }
+
+        // Render languages lists in modal
+        function renderLanguages(filter = "") {
+            const cleanFilter = filter.toLowerCase().trim();
+            
+            popularLangsGrid.innerHTML = "";
+            allLangsGrid.innerHTML = "";
+            let matchCount = 0;
+
+            languages.forEach(lang => {
+                const name = lang.name;
+                const code = lang.code;
+                const isSelected = selectedLanguage === code;
+                
+                const matches = name.toLowerCase().includes(cleanFilter) || code.toLowerCase().includes(cleanFilter);
+                
+                const btnStyle = isSelected
+                    ? "bg-neutral-900 text-white font-bold text-left text-[11px] px-3.5 py-2 rounded-full border border-neutral-900 flex justify-between"
+                    : "bg-[#f3f4f6] hover:bg-neutral-200/80 text-neutral-700 font-semibold text-left text-[11px] px-3.5 py-2 rounded-full border border-transparent transition-all flex justify-between";
+
+                if (popularCodes.includes(code) && !cleanFilter) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = btnStyle;
+                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[9px]">${code}</span>`;
+                    btn.onclick = () => selectLanguage(code, name);
+                    popularLangsGrid.appendChild(btn);
+                }
+
+                if (matches) {
+                    matchCount++;
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = btnStyle;
+                    btn.innerHTML = `<span>${name}</span><span class="opacity-50 font-mono text-[9px]">${code}</span>`;
+                    btn.onclick = () => selectLanguage(code, name);
+                    allLangsGrid.appendChild(btn);
+                }
+            });
+
+            const popHeading = popularLangsGrid.parentElement;
+            if (cleanFilter) {
+                popHeading.classList.add("hidden");
+                document.getElementById("all-langs-header").textContent = `Search Results (${matchCount})`;
+            } else {
+                popHeading.classList.remove("hidden");
+                document.getElementById("all-langs-header").textContent = "All Languages";
+            }
+        }
+
+        // AI language suggestions query
+        async function runAISuggestion(q) {
+            if (!q || q.trim().length < 2) {
+                aiSuggestionBox.classList.add("hidden");
+                return;
+            }
+            try {
+                const res = await fetch(`/api/suggest-language?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                
+                if (data.suggestions && data.suggestions.length > 0) {
+                    aiSuggestionBox.classList.remove("hidden");
+                    aiSuggestionList.innerHTML = "";
+                    
+                    data.suggestions.forEach(s => {
+                        const chip = document.createElement("button");
+                        chip.type = "button";
+                        chip.className = "bg-[#0084ff]/10 hover:bg-[#0084ff] text-[#0084ff] hover:text-white border border-[#0084ff]/20 text-[10px] px-3.5 py-1 rounded-full transition-all active:scale-95 font-semibold flex items-center gap-1";
+                        chip.innerHTML = `<span>${s.name}</span> <span class="opacity-60 text-[8px] uppercase">${s.code}</span>`;
+                        chip.onclick = () => selectLanguage(s.code, s.name);
+                        aiSuggestionList.appendChild(chip);
+                    });
+                } else {
+                    aiSuggestionBox.classList.add("hidden");
+                }
+            } catch (err) {
+                console.error("AI Suggestion error:", err);
+            }
+        }
+
+        langSearchInput.addEventListener("input", (e) => {
+            const q = e.target.value;
+            renderLanguages(q);
+            runAISuggestion(q);
+        });
+
+        function openLanguageModal() {
+            langModal.classList.remove("hidden");
+            setTimeout(() => {
+                langModal.classList.remove("opacity-0");
+                langModal.classList.add("opacity-100");
+                langModal.querySelector(".transform").classList.remove("scale-95");
+                langModal.querySelector(".transform").classList.add("scale-100");
+            }, 10);
+            langSearchInput.value = "";
+            renderLanguages("");
+            aiSuggestionBox.classList.add("hidden");
+            langSearchInput.focus();
+        }
+
+        function closeLanguageModal() {
+            langModal.classList.add("opacity-0");
+            langModal.classList.remove("opacity-100");
+            langModal.querySelector(".transform").classList.remove("scale-100");
+            langModal.querySelector(".transform").classList.add("scale-95");
+            setTimeout(() => langModal.classList.add("hidden"), 200);
+        }
+
+        openModalBtn.addEventListener("click", openLanguageModal);
+        closeModalBtn.addEventListener("click", closeLanguageModal);
+        
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !langModal.classList.contains("hidden")) closeLanguageModal();
+        });
+        langModal.addEventListener("click", (e) => {
+            if (e.target === langModal) closeLanguageModal();
+        });
+
+        // Load messages
+        async function fetchMessages(forceScroll = false) {
+            try {
+                const res = await fetch(`/api/messages?lang=${selectedLanguage}`);
+                const data = await res.json();
+                
+                const isNewMessageAdded = data.messages.length !== messagesData.length;
+                messagesData = data.messages;
+                
+                document.getElementById("open-lang-modal-btn").querySelector("span").textContent = data.current_language;
+                renderMessages();
+                
+                if (isNewMessageAdded || forceScroll) {
+                    scrollToBottom();
+                }
+            } catch (err) {
+                console.error("Failed to load feed:", err);
+                messagesContainer.innerHTML = `
+                    <div class="h-full flex items-center justify-center text-xs text-red-500">
+                        Error syncing feed. Check backend server.
+                    </div>
+                `;
+            }
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                messagesContainer.scrollTo({
+                    top: messagesContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        // Render clean premium chat bubbles (WhatsApp / Instagram Direct Messages style)
+        function renderMessages() {
+            if (messagesData.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center text-xs text-neutral-400 p-6">
+                        <i class="fa-regular fa-comment-dots text-3xl text-neutral-200 mb-2"></i>
+                        <h4 class="font-bold text-neutral-500 text-xs">No Messages yet</h4>
+                        <p class="max-w-xs mt-1">Be the first to join the chat and write a message in any language!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messagesContainer.innerHTML = "";
+            
+            messagesData.forEach(msg => {
+                const isMe = msg.sender.includes(currentSender);
+                const isOriginal = msg.original_lang === selectedLanguage;
+                
+                const bubbleRow = document.createElement("div");
+                bubbleRow.className = `flex flex-col w-full ${isMe ? 'items-end' : 'items-start'} space-y-1.5`;
+
+                // Me: Indigo/Blue Gradient Bubble (iOS DM Style)
+                // Other: Light Gray Bubble
+                const bubbleStyle = isMe
+                    ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs shadow-xs font-medium"
+                    : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-xs shadow-xs font-medium border border-neutral-200/50";
+
+                let metaString = "";
+                if (!isOriginal) {
+                    metaString = `Translated from ${msg.original_lang_name}`;
+                } else {
+                    metaString = `Original: ${msg.original_lang_name}`;
+                }
+
+                const toggleBtnHtml = !isOriginal
+                    ? `<button onclick="toggleOriginal('${msg.id}')" id="btn-orig-${msg.id}" class="text-[9px] text-[#0084ff] hover:underline font-bold transition-all">Show Original</button>`
+                    : '';
+
+                bubbleRow.innerHTML = `
+                    <!-- Sender Name -->
+                    ${!isMe ? `<span class="text-[10px] font-bold text-neutral-500 ml-1.5 flex items-center gap-1">${msg.sender}</span>` : ''}
+                    
+                    <!-- Message Bubble Body -->
+                    <div class="max-w-[75%] md:max-w-[65%] flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="${bubbleStyle} leading-relaxed break-words w-full">
+                            ${msg.translated_text}
+                        </div>
+                        
+                        <!-- Mini Bubble Footer -->
+                        <div class="flex items-center gap-1.5 mt-1.5 px-1.5 text-[9px] text-neutral-400 font-medium">
+                            <span>${msg.timestamp.split(" ")[1].substring(0, 5)}</span>
+                            <span>•</span>
+                            <span>${metaString}</span>
+                            ${toggleBtnHtml ? `<span>•</span> ${toggleBtnHtml}` : ''}
+                        </div>
+
+                        <!-- Expandable Original box -->
+                        ${!isOriginal ? `
+                            <div id="box-orig-${msg.id}" class="hidden mt-2 border-l-2 border-neutral-300 pl-2.5 py-0.5 text-[10px] text-neutral-400 italic">
+                                Original: "${msg.original_text}"
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(bubbleRow);
+            });
+        }
+
+        window.toggleOriginal = function(msgId) {
+            const box = document.getElementById(`box-orig-${msgId}`);
+            const btn = document.getElementById(`btn-orig-${msgId}`);
+            if (box.classList.contains("hidden")) {
+                box.classList.remove("hidden");
+                btn.textContent = "Hide Original";
+                scrollToBottom();
+            } else {
+                box.classList.add("hidden");
+                btn.textContent = "Show Original";
+            }
+        };
+
+        // Post trigger
+        messageForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            
+            const sender = postSender.value;
+            const avatar = postAvatar.value;
+            const text = postText.value.trim();
+            
+            if (!text) return;
+            
+            const submitBtn = document.getElementById("submit-btn");
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-[10px]"></i>`;
+            
+            try {
+                const response = await fetch("/api/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sender, avatar, text })
+                });
+                
+                if (response.ok) {
+                    postText.value = "";
+                    await fetchMessages(true);
+                } else {
+                    const err = await response.json();
+                    alert("Delivery failed: " + (err.detail || "Server error"));
+                }
+            } catch (err) {
+                console.error("Deliver error:", err);
+                alert("Deliver error. Ensure connection.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-[10px]"></i>`;
+            }
+        });
+
+        // Countdown timer clock
+        function startAutoRefreshTimer() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            timeLeft = 5;
+            secondsLeftSpan.textContent = timeLeft;
+            
+            refreshTimer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    timeLeft = 5;
+                    fetchMessages();
+                }
+                secondsLeftSpan.textContent = timeLeft;
+            }, 1000);
+        }
+
+        manualRefreshBtn.addEventListener("click", () => {
+            fetchMessages();
+            startAutoRefreshTimer();
+            const icon = manualRefreshBtn.querySelector("i");
+            icon.classList.add("fa-spin");
+            setTimeout(() => icon.classList.remove("fa-spin"), 500);
+        });
+
+        // App Bootstrapping
+        (async function init() {
+            currentLangText.textContent = selectedLanguageName;
+            
+            applyHeaderVisibility();
+            await fetchLanguages();
+            await fetchMessages(true); // Initial load scroll to bottom
+            startAutoRefreshTimer();
+        })();
+    </script>
+</body>
+</html>

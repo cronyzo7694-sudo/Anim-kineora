@@ -1,0 +1,19 @@
+# Python Caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+
+# Data caches (do not push the translation translations cache to git)
+data/translations.json
+
+# System Files
+.DS_Store
+Thumbs.db
