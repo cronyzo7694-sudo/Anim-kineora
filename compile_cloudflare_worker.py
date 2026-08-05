@@ -70,6 +70,25 @@ let messages = [
 // In-Memory cache for computed translations to maintain 0ms speed
 const translationCache = {};
 
+// In-Memory IP tracking map for spam rate-limiting on Cloudflare Workers
+const ipPostHistory = {};
+
+// Strict caps for system health and spam prevention
+const MAX_MESSAGES_CAP = 100;       // Keep only the last 100 messages to prevent memory bloat
+const MAX_TEXT_LENGTH = 500;        // Max 500 characters per message
+const MAX_SENDER_LENGTH = 40;       // Max 40 characters for sender name
+const RATE_LIMIT_POSTS = 5;         // Max 5 posts...
+const RATE_LIMIT_WINDOW = 30;       // ...per 30 seconds
+
+// HTML Sanitization helper to secure against XSS injection
+function sanitizeHTML(str) {
+  return str.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+}
+
 // Languages supported by Google Translate
 const SUPPORTED_LANGUAGES = {
   "afrikaans": "af", "albanian": "sq", "amharic": "am", "arabic": "ar", "armenian": "hy", "assamese": "as", 
@@ -97,7 +116,7 @@ for (const [name, code] of Object.entries(SUPPORTED_LANGUAGES)) {
   LANG_CODE_TO_NAME[code] = name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Common multi-lingual greetings for search bar AI suggestion
+// Common greetings
 const GREETING_LANGUAGE_MAP = {
   "namaste": "hi", "namaskar": "hi", "kya haal": "hi", "kaise ho": "hi", "hola": "es", "gracias": "es",
   "bonjour": "fr", "merci": "fr", "hallo": "de", "danke": "de", "ciao": "it", "grazie": "it",
@@ -274,8 +293,13 @@ async function handleRequest(request) {
           translatedText = transJson[0].map(s => s && s[0] ? s[0] : "").join("");
         }
         
-        // Cache it
-        translationCache[cacheKey] = translatedText;
+        // Cache it ONLY if translation didn't fail with HTML or Error Block page
+        const transLower = translatedText.toLowerCase();
+        if (!transLower.includes("<html") && !transLower.includes("error 500") && !transLower.includes("that’s an error")) {
+          translationCache[cacheKey] = translatedText;
+        } else {
+          translatedText = msg.text; // Fallback to original on block
+        }
       } catch (err) {
         console.error("Worker Translate Error:", err);
       }
@@ -302,12 +326,30 @@ async function handleRequest(request) {
     });
   }
 
-  // 8. POST API: Send a new message (Auto-detects language)
+  // 8. POST API: Send a new message (Auto-detects language, with Rate Limits & Sanitization)
   if (path === "/api/messages" && request.method === "POST") {
     try {
+      const clientIP = request.headers.get("CF-Connecting-IP") || "unknown-ip";
+      const now = Date.now() / 1000;
+
+      // Rate limit check
+      if (!ipPostHistory[clientIP]) {
+        ipPostHistory[clientIP] = [];
+      }
+      ipPostHistory[clientIP] = ipPostHistory[clientIP].filter(ts => now - ts < RATE_LIMIT_WINDOW);
+
+      if (ipPostHistory[clientIP].length >= RATE_LIMIT_POSTS) {
+        return new Response(JSON.stringify({ 
+          detail: `Too many requests! Spam protection active. Please wait ${Math.ceil(RATE_LIMIT_WINDOW - (now - ipPostHistory[clientIP][0]))}s.` 
+        }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+      }
+
       const body = await request.json();
-      const text = (body.text || "").trim();
-      const sender = (body.sender || "").trim() || "Anonymous User";
+      let text = (body.text || "").trim();
+      let sender = (body.sender || "").trim() || "Anonymous User";
       const avatar = body.avatar || "🦁";
 
       if (!text) {
@@ -317,10 +359,22 @@ async function handleRequest(request) {
         });
       }
 
+      // Enforce strict size limits
+      if (text.length > MAX_TEXT_LENGTH) {
+        text = text.substring(0, MAX_TEXT_LENGTH) + "...";
+      }
+      if (sender.length > MAX_SENDER_LENGTH) {
+        sender = sender.substring(0, MAX_SENDER_LENGTH);
+      }
+
+      // Sanitize inputs to prevent HTML/XSS injection
+      const sanitizedText = sanitizeHTML(text);
+      const sanitizedSender = sanitizeHTML(sender);
+
       // Auto-detect language via Google Single API
       let detectedLang = "en";
       try {
-        const detectUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+        const detectUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(sanitizedText)}`;
         const res = await fetch(detectUrl);
         const json = await res.json();
         detectedLang = json[2] || "en";
@@ -332,18 +386,33 @@ async function handleRequest(request) {
 
       const newMsg = {
         id: msgId,
-        sender,
+        sender: sanitizedSender,
         avatar,
-        text,
+        text: sanitizedText,
         original_lang: detectedLang,
         original_lang_name: detectedLangName,
         timestamp
       };
 
       messages.push(newMsg);
+      
+      // Enforce Message Caps (Last 100 messages) to prevent memory leak / storage issues
+      if (messages.length > MAX_MESSAGES_CAP) {
+        const removed = messages.shift();
+        // Clean translation cache for removed messages
+        const cacheKeys = Object.keys(translationCache);
+        for (const key of cacheKeys) {
+          if (key.startsWith(`${removed.id}_`)) {
+            delete translationCache[key];
+          }
+        }
+      }
+
+      // Track timestamp
+      ipPostHistory[clientIP].push(now);
 
       // Cache translation in its own language
-      translationCache[`${msgId}_${detectedLang}`] = text;
+      translationCache[`${msgId}_${detectedLang}`] = sanitizedText;
 
       return new Response(JSON.stringify(newMsg), {
         headers: { 
