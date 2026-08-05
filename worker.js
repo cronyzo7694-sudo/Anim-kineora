@@ -419,16 +419,22 @@ const HTML_CONTENT = `<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for neat icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Linked Custom Stylesheet -->
-    <link rel="stylesheet" href="style.css">
+    <!-- Linked Custom Stylesheet with Cache Buster -->
+    <link rel="stylesheet" href="style.css?v=2.3">
 </head>
 <body>
 
     <!-- Full Screen Blazing Fire Overlay (Triggered on high-speed swipe) -->
-    <div id="fire-overlay" class="fire-screen-overlay">
+    <div id="fire-overlay" class="fire-screen-overlay" aria-hidden="true">
         <!-- Canvas to draw realistic climbing fire flames -->
         <canvas id="flames-canvas" class="climbing-flames-canvas"></canvas>
     </div>
+
+    <!-- Floating "New Messages" Alert Dock (Click to scroll down) -->
+    <button id="new-messages-dock" class="new-messages-dock-btn" aria-label="Scroll to new messages">
+        <i class="fa-solid fa-arrow-down"></i>
+        <span>New Messages</span>
+    </button>
 
     <!-- App Container -->
     <div class="app-container" id="app-container">
@@ -436,30 +442,30 @@ const HTML_CONTENT = `<!DOCTYPE html>
         <!-- ==========================================
              CHAT WINDOW MAIN COLUMN (100% Width Layout)
              ========================================== -->
-        <main class="chat-window" id="chat-window">
+        <main class="chat-window" id="chat-window" role="log" aria-label="Chat Log">
 
             <!-- Chat Header -->
-            <header class="chat-header">
+            <header class="chat-header" role="banner">
                 <div class="header-left">
-                    <div class="header-avatar">🌐</div>
+                    <div class="header-avatar" aria-hidden="true">🌐</div>
                     <div class="header-details">
                         <h2 class="header-title">BhashaSetu Global Chat</h2>
-                        <p class="header-subtitle">Auto Translating Group Chat Room</p>
+                        <div class="header-subtitle-row">
+                            <!-- Connection Status Dot Indicator (Quiet, Non-blinking) -->
+                            <span id="status-indicator-dot" class="status-dot connected" aria-hidden="true"></span>
+                            <p id="status-indicator-text" class="header-subtitle">Connected</p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Header Actions Panel -->
                 <div class="header-actions">
-                    <!-- Sync Indicator -->
-                    <span class="text-[10px] text-neutral-400 font-mono hidden sm:inline" id="countdown-indicator">
-                        Syncing in <span id="seconds-left">5</span>s
-                    </span>
                     <!-- Manual Sync -->
-                    <button id="manual-refresh-btn" class="header-icon-btn" title="Force Sync Feed">
+                    <button id="manual-refresh-btn" class="header-icon-btn" aria-label="Sync Chat Feed" title="Sync Feed">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                     <!-- Language Selection Trigger -->
-                    <button id="open-lang-modal-btn" class="header-btn" title="Choose Translation Language">
+                    <button id="open-lang-modal-btn" class="header-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Choose Translation Language" title="Choose Language">
                         <i class="fa-solid fa-language"></i>
                         <span id="current-lang-text">English (en)</span>
                     </button>
@@ -467,19 +473,18 @@ const HTML_CONTENT = `<!DOCTYPE html>
             </header>
 
             <!-- Scrollable Messages Container with Vector SVG Wallpaper -->
-            <section class="chat-messages-container custom-scroll" id="messages-container">
-                <!-- Chat bubbles are injected here by app.js -->
+            <section class="chat-messages-container custom-scroll" id="messages-container" aria-live="polite">
+                <!-- Chat bubbles are injected here dynamically by app.js -->
             </section>
 
             <!-- Bottom Sticky Chat Footer Area -->
-            <footer class="chat-footer">
+            <footer class="chat-footer" role="contentinfo">
                 <div class="input-row">
                     
                     <!-- Quick Identity Indicator & Dice Shuffle -->
-                    <button type="button" id="shuffle-identity-btn" class="identity-badge" title="Tap to randomize your nickname">
-                        <span id="avatar-preview" class="identity-avatar">🦁</span>
-                        <span id="sender-display" class="identity-name">Toofani Panda</span>
-                        <i class="fa-solid fa-dice text-neutral-400 text-[10px]"></i>
+                    <button type="button" id="shuffle-identity-btn" class="identity-badge" aria-label="Randomize Nickname Tag" title="Randomize Nickname">
+                        <span id="avatar-preview" class="identity-avatar" aria-hidden="true">🦁</span>
+                        <span id="sender-display" class="identity-name">User #-----</span>
                     </button>
                     
                     <!-- Unified Input Container -->
@@ -488,18 +493,18 @@ const HTML_CONTENT = `<!DOCTYPE html>
                         <input type="hidden" id="post-avatar" value="🦁">
                         <input type="hidden" id="post-sender" value="🦁 Anonymous">
 
-                        <!-- Text Field -->
-                        <input type="text" id="post-text" required autocomplete="off" class="message-input" placeholder="Type message in any language...">
+                        <!-- Multi-line Textarea supporting Enter-to-Send & Shift+Enter-to-Newline -->
+                        <textarea id="post-text" class="message-input custom-scroll" rows="1" aria-label="Type your message" placeholder="Type message in any language..."></textarea>
                         
                         <!-- 🚀 Revolutionary SWIPE-TO-SEND ROCKET Channel -->
-                        <div id="swipe-channel" class="swipe-send-channel" title="Swipe rocket right to send!">
+                        <div id="swipe-channel" class="swipe-send-channel" aria-hidden="true" title="Swipe rocket right to send!">
                             <!-- Bouncing Tutorial Arrow Guide -->
                             <div id="swipe-guide" class="swipe-guide-arrow">
                                 <i class="fa-solid fa-angles-left"></i> Swipe
                             </div>
                             
                             <!-- Grabbable Rocket handle button -->
-                            <div id="swipe-rocket" class="swipe-rocket-btn">
+                            <div id="swipe-rocket" class="swipe-rocket-btn" role="button" aria-label="Swipe to Send Rocket" tabindex="0">
                                 <i class="fa-solid fa-rocket"></i>
                                 <!-- Embedded Fire exhaust trail -->
                                 <span id="fire-trail" class="rocket-fire-trail">🔥</span>
@@ -517,19 +522,19 @@ const HTML_CONTENT = `<!DOCTYPE html>
     <!-- ==========================================
          LANGUAGE SELECTOR POPUP MODAL
          ========================================== -->
-    <div id="lang-modal" class="modal-overlay">
+    <div id="lang-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title-id">
         <div class="modal-card">
             <!-- Header -->
             <div class="modal-header">
-                <h3 class="modal-title">Select Chat Language</h3>
-                <button id="close-lang-modal-btn" class="modal-close-btn">Close</button>
+                <h3 class="modal-title" id="modal-title-id">Select Chat Language</h3>
+                <button id="close-lang-modal-btn" class="modal-close-btn" aria-label="Close Language Modal">Close</button>
             </div>
 
             <!-- Search Field -->
             <div class="modal-search-box">
                 <div class="search-wrapper">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="lang-search-input" class="search-input" placeholder="Search language or type greeting (e.g. 'Bonjour')...">
+                    <input type="text" id="lang-search-input" class="search-input" aria-label="Search languages" placeholder="Search language or type greeting (e.g. 'Bonjour')...">
                 </div>
                 
                 <!-- AI suggestion box -->
@@ -543,6 +548,23 @@ const HTML_CONTENT = `<!DOCTYPE html>
 
             <!-- Body grid list -->
             <div class="modal-body custom-scroll">
+                
+                <!-- Recent Languages -->
+                <div id="recent-languages-section" class="hidden">
+                    <h4 class="modal-sub-title">Recent Languages</h4>
+                    <div class="lang-grid" id="recent-languages-grid">
+                        <!-- Recent buttons -->
+                    </div>
+                </div>
+
+                <!-- Device & Auto-detect Language -->
+                <div>
+                    <h4 class="modal-sub-title">Suggested & System</h4>
+                    <div class="lang-grid" id="system-languages-grid">
+                        <!-- Device and Auto buttons -->
+                    </div>
+                </div>
+
                 <!-- Popular list -->
                 <div>
                     <h4 class="modal-sub-title">Popular Languages</h4>
@@ -562,59 +584,67 @@ const HTML_CONTENT = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Linked JS App Logic -->
-    <script src="app.js"></script>
+    <!-- Linked JS App Logic with Cache Buster -->
+    <script src="app.js?v=2.3"></script>
 </body>
 </html>
 `;
 const STYLE_CONTENT = `/* 
 ========================================================
-BhashaSetu Premium Messenger — Single-Page Chat Stylesheet
-Highly polished, single-feed layout with immersive animations
+BhashaSetu — Premium Dark Theme Chat Stylesheet
+Production-Ready CSS conforming to strict guidelines
 ========================================================
 */
 
 :root {
-    /* Colors */
+    /* Color Palette */
     --bg-color: #0F1115;
+    --bg-surface: #171A21;
     --bg-header: #12151B;
-    --bg-input: #1B1E26;
+    --bg-input: #1C1F26;
+    --bg-bubble-incoming: #1E222B;
+    --bg-bubble-outgoing: #4F8CFF;
+    
+    /* Accents & Borders */
     --accent-color: #4F8CFF;
-    --accent-hover: #3b76e0;
+    --accent-hover: #357AE8;
+    --border-color: rgba(255, 255, 255, 0.06);
+    --border-color-focus: rgba(79, 140, 255, 0.4);
+    
+    /* Text Colors */
     --text-primary: #F5F5F5;
     --text-secondary: #A5A5A5;
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-color-focus: rgba(79, 140, 255, 0.3);
-    
-    /* Bubble Colors */
-    --bubble-outgoing: #4F8CFF;
-    --bubble-incoming: #1E222B;
-    --bubble-incoming-border: rgba(255, 255, 255, 0.03);
+    --text-muted: #7A7A7A;
     
     /* Typography Font Sizes */
-    --font-chat: 16px;
+    --font-chat-desktop: 16px;
     --font-chat-mobile: 15px;
     --font-time: 12px;
+    --font-sidebar: 15px;
+    --font-search: 15px;
     --font-input: 16px;
     --font-title: 17px;
     --font-subtitle: 13px;
     
-    /* Sizing & Dimensions */
+    /* Layout Sizing */
     --header-height-desktop: 64px;
     --header-height-mobile: 56px;
-    --input-height-desktop: 76px;
-    --input-height-mobile: 72px;
+    --input-height-desktop: 60px;
+    --input-height-mobile: 56px;
     
     /* Radii */
     --border-radius: 12px;
     --bubble-radius: 18px;
     --input-radius: 28px;
     
-    /* Animations */
+    /* Animations & Transitions */
     --transition-speed: 200ms;
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ========================================================
+   1. CORE RESET & BODY STYLES
+   ======================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -629,33 +659,53 @@ body, html {
     font-family: var(--font-family);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* App Wrapper - Single Column Chat Panel */
+/* App Master Layout */
 .app-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
     position: relative;
+    background-color: var(--bg-color);
 }
 
-/* Custom Scrollbars */
-.custom-scroll::-webkit-scrollbar {
-    width: 5px;
+/* Custom Thin & Auto-hiding Scrollbar */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
+
+.custom-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
 .custom-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .custom-scroll::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-}
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.15);
+    transition: background var(--transition-speed);
 }
 
-/* Header (64px Tall Desktop) */
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Keyboard Accessibility Focus styles */
+*:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* ========================================================
+   2. HEADER CONTAINER (64px Desktop / 56px Mobile)
+   ======================================================== */
 .chat-header {
     height: var(--header-height-desktop);
     background-color: var(--bg-header);
@@ -665,7 +715,7 @@ body, html {
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
-    z-index: 15;
+    z-index: 30;
     user-select: none;
 }
 
@@ -673,6 +723,7 @@ body, html {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
 .header-avatar {
@@ -685,20 +736,66 @@ body, html {
     justify-content: center;
     font-size: 16px;
     font-weight: bold;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.header-details {
+    min-width: 0;
 }
 
 .header-title {
     font-size: var(--font-title);
     font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-subtitle-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 1px;
+}
+
+/* Connection Status Dot (No blinking, highly professional) */
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color var(--transition-speed);
+}
+
+.status-dot.connected {
+    background-color: #2ec4b6; /* Green */
+}
+
+.status-dot.syncing {
+    background-color: #ffb703; /* Orange */
+    animation: statusPulse 1s infinite alternate;
+}
+
+.status-dot.offline {
+    background-color: #e63946; /* Red */
+}
+
+@keyframes statusPulse {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
 }
 
 .header-subtitle {
     font-size: var(--font-subtitle);
     color: var(--text-secondary);
-    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Header Actions */
+/* Header Actions Panel */
 .header-actions {
     display: flex;
     align-items: center;
@@ -714,7 +811,7 @@ body, html {
     padding: 6px 14px;
     border-radius: 16px;
     cursor: pointer;
-    transition: background-color var(--transition-speed);
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -723,13 +820,14 @@ body, html {
 
 .header-btn:hover {
     background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .header-icon-btn {
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
     padding: 6px;
     border-radius: 50%;
@@ -747,20 +845,32 @@ body, html {
     background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Chat Canvas area with Repeating Doodle Vector SVG Background */
+/* ========================================================
+   3. CHAT CANVAS & VECTOR SVG PATTERN WALLPAPER
+   ======================================================== */
+.chat-window {
+    flex-grow: 1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 .chat-messages-container {
-    height: 100%;
+    flex-grow: 1;
     width: 100%;
     overflow-y: auto;
     position: relative;
     
-    /* 100% Vector SVG doodle background repeating seamless forever */
+    /* 100% Seamless Repeating Vector SVG Doodle Pattern */
     background-image: url('chat-pattern.svg');
     background-repeat: repeat;
     background-size: 420px;
     
     padding: 24px;
-    padding-bottom: 100px; /* Crucial: ensures scroll ends completely above the blurred input dock */
+    padding-bottom: 92px; /* Prevent floating input overlap */
+    scroll-behavior: smooth;
 }
 
 .chat-messages-inner {
@@ -772,94 +882,204 @@ body, html {
     gap: 8px; /* Strict 8px space between messages */
 }
 
-/* Message Bubble Rows */
+/* ========================================================
+   4. MESSAGE BUBBLES LAYOUT & STATUS STATES
+   ======================================================== */
 .message-row {
     width: 100%;
     display: flex;
     flex-direction: column;
-    animation: messageFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    margin-bottom: 2px;
 }
 
-@keyframes messageFadeIn {
-    0% { opacity: 0; transform: translateY(8px); }
-    100% { opacity: 1; transform: translateY(0); }
+/* Message Fade-In Slide-Up (Strict 200ms) */
+.message-row.animate-in {
+    animation: messageAppear 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.message-row.incoming { align-items: flex-start; }
-.message-row.outgoing { align-items: flex-end; }
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-.message-sender {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-secondary);
+.message-row.incoming {
+    align-items: flex-start;
+}
+
+.message-row.outgoing {
+    align-items: flex-end;
+}
+
+/* Alignment Row for Name and Avatar */
+.message-header-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 3px;
     margin-left: 6px;
     user-select: none;
 }
 
+.message-sender-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-sender-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Message Bubble */
 .message-bubble {
-    max-width: 72%;
-    padding: 12px 16px;
-    border-radius: var(--bubble-radius);
-    font-size: var(--font-chat);
+    padding: 12px 16px; /* Strict guidelines */
+    border-radius: var(--bubble-radius); /* Strict 18px radius */
+    font-size: var(--font-chat-desktop);
     line-height: 1.5;
     position: relative;
     word-wrap: break-word;
+    word-break: break-word;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Width limits (72% Desktop / 82% Mobile) */
 .message-row.incoming .message-bubble {
-    background-color: var(--bubble-incoming);
+    max-width: 72%;
+    background-color: var(--bg-surface);
     color: var(--text-primary);
     border-top-left-radius: 4px;
     border: 1px solid var(--bubble-incoming-border);
 }
 
 .message-row.outgoing .message-bubble {
-    background-color: var(--bubble-outgoing);
+    max-width: 72%;
+    background-color: var(--bg-bubble-outgoing);
     color: #ffffff;
     border-top-right-radius: 4px;
 }
 
-.message-meta-info {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-    font-size: var(--font-time);
-    margin-top: 2px;
+/* Text Formatting (Code Blocks, Clickable Links) */
+.message-text-content a {
+    color: #89afff;
+    text-decoration: underline;
 }
 
-.message-row.incoming .message-meta-info { color: var(--text-secondary); }
-.message-row.outgoing .message-meta-info { color: rgba(255, 255, 255, 0.7); }
+.message-row.outgoing .message-text-content a {
+    color: #ffffff;
+    text-decoration: underline;
+}
 
-.original-text-link {
-    font-size: 11px;
+.message-code-block {
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    margin: 4px 0;
+    color: #ffd166;
+}
+
+/* Interactive Translation Toggle Link */
+.translation-toggle-link {
+    font-size: 10px;
     font-weight: 700;
     cursor: pointer;
-    text-decoration: underline;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     background: none;
     border: none;
-    text-align: left;
     outline: none;
+    text-align: left;
+    margin-top: 2px;
+    display: inline-block;
+    transition: opacity var(--transition-speed);
 }
 
-.message-row.incoming .original-text-link { color: var(--accent-color); }
-.message-row.outgoing .original-text-link { color: #ffffff; }
+.translation-toggle-link:hover {
+    opacity: 0.8;
+}
 
-.original-collapsible-box {
-    margin-top: 6px;
+.message-row.incoming .translation-toggle-link {
+    color: var(--accent-color);
+}
+
+.message-row.outgoing .translation-toggle-link {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Collapsible Translation Segment */
+.translation-box {
+    margin-top: 4px;
     padding-top: 6px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     font-size: 13px;
-    font-style: italic;
-    opacity: 0.85;
+    opacity: 0.95;
+    line-height: 1.4;
+}
+
+.message-row.incoming .translation-box {
+    color: var(--text-secondary);
+}
+
+.message-row.outgoing .translation-box {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Bubble Metadata row (Time + State Checkmark) */
+.message-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: var(--font-time);
+    margin-top: 2px;
+    user-select: none;
+}
+
+.message-row.incoming .message-meta-row {
+    color: var(--text-secondary);
+}
+
+.message-row.outgoing .message-meta-row {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Detailed Message Status Indicators */
+.message-status-icon {
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-failed-indicator {
+    color: #e63946;
+    cursor: pointer;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
 }
 
 /* ========================================================
-   BOTTOM CHAT FOOTER & REVOLUTIONARY SWIPE-TO-SEND ROCKET
+   5. FLOATING DOCK DYNAMIC INPUT FOOTER (iOS/Instagram)
    ======================================================== */
 .chat-footer {
     height: var(--input-height-desktop);
@@ -868,8 +1088,7 @@ body, html {
     left: 0;
     right: 0;
     width: 100%;
-    /* Transparent background with beautiful backdrop blur (prevent eye strain, very modern) */
-    background: rgba(15, 17, 21, 0.65) !important;
+    background: rgba(15, 17, 21, 0.75) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-top: 1px solid var(--border-color);
@@ -878,7 +1097,7 @@ body, html {
     justify-content: center;
     padding: 0 16px;
     flex-shrink: 0;
-    z-index: 15;
+    z-index: 25;
 }
 
 .input-row {
@@ -889,7 +1108,6 @@ body, html {
     gap: 12px;
 }
 
-/* Identity Bubble Button */
 .identity-badge {
     background-color: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-color);
@@ -907,7 +1125,6 @@ body, html {
 .identity-avatar { font-size: 14px; }
 .identity-name { font-size: 11px; font-weight: 700; color: var(--text-primary); }
 
-/* Unified Input area covering text field + swipe channel */
 .footer-input-container {
     flex-grow: 1;
     display: flex;
@@ -915,26 +1132,37 @@ body, html {
     background-color: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--input-radius); /* Strict 28px radius */
-    padding: 4px 6px 4px 18px; /* Padding for neat look */
+    padding: 4px 6px 4px 18px;
     gap: 8px;
+    transition: border-color var(--transition-speed);
 }
 
+.footer-input-container:focus-within {
+    border-color: var(--border-color-focus);
+}
+
+/* Responsive Auto-resizing Textarea (Supporting Shift+Enter) */
 .message-input {
     flex-grow: 1;
-    height: 40px;
+    height: 38px;
+    max-height: 100px;
     background: none;
     border: none;
     color: var(--text-primary);
     font-size: var(--font-input);
     outline: none;
+    resize: none; /* Disables manual resizing */
+    padding-top: 9px;
+    font-family: inherit;
+    line-height: 1.4;
 }
 
-/* 🚀 Swipe-to-Send Channel Area */
+/* Swipe-to-Send Channel Area */
 .swipe-send-channel {
     position: relative;
     width: 130px;
     height: 42px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.35);
     border-radius: 21px;
     border: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
@@ -1015,8 +1243,49 @@ body, html {
 }
 
 /* ========================================================
-   FULL SCREEN BLAZING FIRE SCREEN FLASH OVERLAY (0.3s)
+   6. FLOATING HUD NOTIFICATIONS & FLOATING BUTTONS
    ======================================================== */
+
+/* Scroll-to-bottom / "New Messages" Alert Floating Dock */
+.new-messages-dock-btn {
+    position: fixed;
+    bottom: 96px; /* Sits perfectly above input bar */
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 20;
+    background-color: var(--accent-color);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(79, 140, 255, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+    outline: none;
+}
+
+.new-messages-dock-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.new-messages-dock-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.new-messages-dock-btn:active {
+    transform: translateX(-50%) scale(0.96);
+}
+
+/* Full Screen Blazing Fire Overlay (Triggered on high-speed swipe) */
 .fire-screen-overlay {
     position: fixed;
     inset: 0;
@@ -1044,7 +1313,6 @@ body, html {
     50% { transform: translate(-2px, -4px); }
 }
 
-/* Climbing Fire Flames at bottom */
 .climbing-flames-canvas {
     width: 100%;
     height: 180px;
@@ -1052,7 +1320,7 @@ body, html {
 }
 
 /* ========================================================
-   LANGUAGE SELECTOR MODAL (Insta/Telegram Styled Popup)
+   7. LANGUAGE SELECTOR MODAL (Telegram/Whatsapp Styled Popup)
    ======================================================== */
 .modal-overlay {
     position: fixed;
@@ -1074,15 +1342,15 @@ body, html {
 }
 
 .modal-card {
-    background-color: #15181F;
+    background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
     max-height: 75vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     transform: scale(0.95);
     transition: transform var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1092,7 +1360,7 @@ body, html {
 }
 
 .modal-header {
-    padding: 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -1124,7 +1392,7 @@ body, html {
 
 /* Modal Search input */
 .modal-search-box {
-    padding: 12px 16px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-header);
 }
@@ -1167,10 +1435,10 @@ body, html {
 .modal-body {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
 }
 
 .modal-sub-title {
@@ -1214,6 +1482,12 @@ body, html {
     background-color: rgba(79, 140, 255, 0.1);
 }
 
+/* Keyboard navigable active focus style on grid buttons */
+.lang-btn.focus-highlight {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -1px;
+}
+
 .lang-code {
     font-size: 10px;
     color: var(--accent-color);
@@ -1250,14 +1524,40 @@ body, html {
     border-color: var(--accent-color);
 }
 
+.ai-chip.focus-highlight {
+    outline: 2px solid var(--accent-color);
+}
+
+/* Skeleton Loading Shimmer effects */
+.skeleton-row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.skeleton-bubble {
+    width: 60%;
+    height: 60px;
+    background: linear-gradient(90deg, #1e222b 25%, #2a2e38 50%, #1e222b 75%);
+    background-size: 200% 100%;
+    border-radius: var(--bubble-radius);
+    animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 /* ========================================================
-   RESPONSIVE LAYOUTS
+   8. RESPONSIVE MEDIA QUERIES (Desktop, Tablet, Mobile)
    ======================================================== */
 @media (max-width: 767px) {
     :root {
         --header-height-mobile: 56px;
         --input-height-mobile: 72px;
-        --font-chat: var(--font-chat-mobile);
+        --font-chat-desktop: var(--font-chat-mobile);
     }
     
     .chat-header {
@@ -1273,96 +1573,129 @@ body, html {
     .identity-badge {
         padding: 6px 10px;
     }
+    
+    /* Strict mobile bubble maximum width constraint */
+    .message-row.incoming .message-bubble,
+    .message-row.outgoing .message-bubble {
+        max-width: 82%; /* Strict 82% mobile maximum width constraint */
+    }
+    
+    .lang-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+    }
+    
+    .new-messages-dock-btn {
+        bottom: 88px;
+    }
 }
 `;
 const JS_CONTENT = `/**
  * ========================================================
  * BhashaSetu — Immersive Gamified Chat Application
- * Production-ready Vanilla JS ES6 with Swipe-to-Send & Fire
+ * Production-ready Vanilla JS ES6 with SWR & Optimistic UI
+ * Arch-Certified Quality conforming to strict guidelines
  * ========================================================
  */
 
-// Application State
-let selectedLanguage = localStorage.getItem("selectedLanguageCode") || "en";
-let selectedLanguageName = localStorage.getItem("selectedLanguageName") || "English";
-let languages = [];
-let messagesData = [];
-let refreshTimer = null;
-let timeLeft = 5;
+// Core App State Configuration
+const CONFIG = {
+    maxMessagesCap: 100,
+    rateLimitPosts: 5,
+    rateLimitWindow: 30000, // 30 seconds
+    syncInterval: 5000,     // 5 seconds background polling
+    popularCodes: ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"]
+};
 
-// Dynamic Client-Side Translation Cache for SWR (Stale-While-Revalidate) 0ms Transitions
-const clientTranslationCache = {};
+const STATE = {
+    selectedLanguage: localStorage.getItem("selectedLanguageCode") || "en",
+    selectedLanguageName: localStorage.getItem("selectedLanguageName") || "English",
+    languages: [],
+    messagesData: [],
+    clientTranslationCache: {}, // SWR local language cache
+    recentLanguages: JSON.parse(localStorage.getItem("recentLanguages")) || [],
+    renderedMessageIds: new Set(),
+    userNumberTag: sessionStorage.getItem("user_tag") || "",
+    currentAvatar: localStorage.getItem("chatSenderAvatar") || "🦁",
+    isSyncing: false,
+    isOffline: false,
+    unreadNewMessages: 0,
+    isUserAtBottom: true
+};
 
-// Popular language codes for sidebar selection
-const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
-
-// DOM Elements
-const openModalBtn = document.getElementById("open-lang-modal-btn");
-const closeModalBtn = document.getElementById("close-lang-modal-btn");
-const langModal = document.getElementById("lang-modal");
-const langSearchInput = document.getElementById("lang-search-input");
-const aiSuggestionBox = document.getElementById("ai-suggestion-box");
-const aiSuggestionList = document.getElementById("ai-suggestion-list");
-const popularLangsGrid = document.getElementById("popular-languages-grid");
-const allLangsGrid = document.getElementById("all-languages-grid");
-const currentLangText = document.getElementById("current-lang-text");
-
-const messageForm = document.getElementById("message-form");
-const postAvatar = document.getElementById("post-avatar");
-const postSender = document.getElementById("post-sender");
-const avatarPreview = document.getElementById("avatar-preview");
-const senderDisplay = document.getElementById("sender-display");
-const postText = document.getElementById("post-text");
-const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
-
-const messagesContainer = document.getElementById("messages-container");
-const secondsLeftSpan = document.getElementById("seconds-left");
-const manualRefreshBtn = document.getElementById("manual-refresh-btn");
-
-// Drag Elements for Rocket
-const swipeChannel = document.getElementById("swipe-channel");
-const swipeRocket = document.getElementById("swipe-rocket");
-const fireTrail = document.getElementById("fire-trail");
-const swipeGuide = document.getElementById("swipe-guide");
-
-// Full Screen Fire Elements
-const fireOverlay = document.getElementById("fire-overlay");
-const flamesCanvas = document.getElementById("flames-canvas");
-const canvasCtx = flamesCanvas.getContext("2d");
-
-// ========================================================
-// 👤 PERSISTENT UNIQUE USER NUMBER TAGS (STRICTLY NON-REPEATING)
-// ========================================================
-let currentAvatar = localStorage.getItem("chatSenderAvatar") || "🦁";
-let userNumberTag = sessionStorage.getItem("user_tag");
-
-// If they don't have a unique tag inside this session, generate one!
-if (!userNumberTag) {
-    // Generate a highly unique 5-digit number tag (e.g. #48291)
+// Unique User Tag Session Generation
+if (!STATE.userNumberTag) {
     const uniqueNum = Math.floor(Math.random() * 90000) + 10000;
-    userNumberTag = \`#\${uniqueNum}\`;
-    sessionStorage.setItem("user_tag", userNumberTag);
+    STATE.userNumberTag = \`#\${uniqueNum}\`;
+    sessionStorage.setItem("user_tag", STATE.userNumberTag);
 }
 
-// Set up Avatar while keeping the persistent User Number Tag
+// DOM Elements Registry
+const DOM = {
+    appContainer: document.getElementById("app-container"),
+    openModalBtn: document.getElementById("open-lang-modal-btn"),
+    closeModalBtn: document.getElementById("close-lang-modal-btn"),
+    langModal: document.getElementById("lang-modal"),
+    langSearchInput: document.getElementById("lang-search-input"),
+    aiSuggestionBox: document.getElementById("ai-suggestion-box"),
+    aiSuggestionList: document.getElementById("ai-suggestion-list"),
+    popularLangsGrid: document.getElementById("popular-languages-grid"),
+    recentLangsSection: document.getElementById("recent-languages-section"),
+    recentLangsGrid: document.getElementById("recent-languages-grid"),
+    systemLangsGrid: document.getElementById("system-languages-grid"),
+    allLangsGrid: document.getElementById("all-languages-grid"),
+    currentLangText: document.getElementById("current-lang-text"),
+    
+    messageForm: document.getElementById("message-form"),
+    postAvatar: document.getElementById("post-avatar"),
+    postSender: document.getElementById("post-sender"),
+    avatarPreview: document.getElementById("avatar-preview"),
+    senderDisplay: document.getElementById("sender-display"),
+    postText: document.getElementById("post-text"),
+    shuffleIdentityBtn: document.getElementById("shuffle-identity-btn"),
+    
+    messagesContainer: document.getElementById("messages-container"),
+    manualRefreshBtn: document.getElementById("manual-refresh-btn"),
+    newMessagesDock: document.getElementById("new-messages-dock"),
+    statusIndicatorDot: document.getElementById("status-indicator-dot"),
+    statusIndicatorText: document.getElementById("status-indicator-text"),
+    
+    swipeChannel: document.getElementById("swipe-channel"),
+    swipeRocket: document.getElementById("swipe-rocket"),
+    fireTrail: document.getElementById("fire-trail"),
+    swipeGuide: document.getElementById("swipe-guide"),
+    
+    fireOverlay: document.getElementById("fire-overlay"),
+    flamesCanvas: document.getElementById("flames-canvas"),
+    canvasCtx: document.getElementById("flames-canvas").getContext("2d")
+};
+
+// ========================================================
+// 1. IDENTITY & USER CREDENTIAL MANAGEMENT
+// ========================================================
 function setIdentity(avatar) {
-    currentAvatar = avatar;
+    STATE.currentAvatar = avatar;
     localStorage.setItem("chatSenderAvatar", avatar);
     
-    postAvatar.value = avatar;
-    // Strictly set their sender nickname to 'User #XXXXX'
-    const fullSenderName = \`User \${userNumberTag}\`;
-    postSender.value = \`\${avatar} \${fullSenderName}\`;
+    DOM.postAvatar.value = avatar;
+    const fullSenderName = \`User \${STATE.userNumberTag}\`;
+    DOM.postSender.value = \`\${avatar} \${fullSenderName}\`;
     
-    avatarPreview.textContent = avatar;
-    senderDisplay.textContent = fullSenderName;
+    DOM.avatarPreview.textContent = avatar;
+    DOM.senderDisplay.textContent = fullSenderName;
 }
 
-// Initialize Identity with the persistent unique tag
-setIdentity(currentAvatar);
+setIdentity(STATE.currentAvatar);
+
+DOM.shuffleIdentityBtn.addEventListener("click", () => {
+    const avatarsList = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
+    const randomAvatar = avatarsList[Math.floor(Math.random() * avatarsList.length)];
+    setIdentity(randomAvatar);
+    DOM.shuffleIdentityBtn.classList.add("scale-95");
+    setTimeout(() => DOM.shuffleIdentityBtn.classList.remove("scale-95"), 100);
+});
 
 // ========================================================
-// 🔊 REAL-TIME AUDIO SYNTHESIZER (WEB AUDIO API - 100% OFFLINE)
+// 2. AUDIO SYNTHESIS LOGIC (WEB AUDIO API)
 // ========================================================
 function playRocketLaunchSound(isHighSpeed = false) {
     try {
@@ -1396,9 +1729,7 @@ function playRocketLaunchSound(isHighSpeed = false) {
         
         osc.start();
         osc.stop(ctx.currentTime + duration);
-    } catch (err) {
-        console.error("Audio synthesis error:", err);
-    }
+    } catch (err) {}
 }
 
 function playFireRoarSound() {
@@ -1406,7 +1737,7 @@ function playFireRoarSound() {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
         const ctx = new AudioCtx();
-        const bufferSize = ctx.sampleRate * 0.3; // 0.3s duration buffer
+        const bufferSize = ctx.sampleRate * 0.3;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
         
@@ -1438,14 +1769,14 @@ function playFireRoarSound() {
 }
 
 // ========================================================
-// 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
+// 3. FLUID FIRE FLAMES CANVAS RENDERING (0.3s)
 // ========================================================
 let flameParticles = [];
 let flameAnimationId = null;
 
 function resizeFlamesCanvas() {
-    flamesCanvas.width = window.innerWidth;
-    flamesCanvas.height = 180;
+    DOM.flamesCanvas.width = window.innerWidth;
+    DOM.flamesCanvas.height = 180;
 }
 window.addEventListener("resize", resizeFlamesCanvas);
 resizeFlamesCanvas();
@@ -1489,14 +1820,14 @@ class FlameParticle {
 }
 
 function animateFlames() {
-    canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+    DOM.canvasCtx.clearRect(0, 0, DOM.flamesCanvas.width, DOM.flamesCanvas.height);
     for (let i = 0; i < 15; i++) {
-        flameParticles.push(new FlameParticle(flamesCanvas.width));
+        flameParticles.push(new FlameParticle(DOM.flamesCanvas.width));
     }
     
     flameParticles.forEach((p, idx) => {
         p.update();
-        p.draw(canvasCtx);
+        p.draw(DOM.canvasCtx);
         if (p.life <= 0 || p.radius <= 0) {
             flameParticles.splice(idx, 1);
         }
@@ -1507,46 +1838,77 @@ function animateFlames() {
 
 function triggerFireScreenOverlay() {
     flameParticles = [];
-    fireOverlay.classList.add("active");
+    DOM.fireOverlay.classList.add("active");
     animateFlames();
     playFireRoarSound();
     
     setTimeout(() => {
-        fireOverlay.classList.remove("active");
+        DOM.fireOverlay.classList.remove("active");
         cancelAnimationFrame(flameAnimationId);
-        canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
+        DOM.canvasCtx.clearRect(0, 0, DOM.flamesCanvas.width, DOM.flamesCanvas.height);
     }, 300);
 }
 
 // ========================================================
-// 🚀 SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
+// 4. ADVANCED TEXT RESIZING & AREA INPUT FLOWS
+// ========================================================
+function autoResizeInput() {
+    DOM.postText.style.height = "auto";
+    DOM.postText.style.height = (DOM.postText.scrollHeight - 4) + "px";
+}
+
+DOM.postText.addEventListener("input", autoResizeInput);
+
+// Escape HTML utility to prevent XSS
+function escapeHTML(str) {
+    return str.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+}
+
+// Formatter to render links as clickable and backticks as inline code blocks
+function formatMessageText(text) {
+    let formatted = escapeHTML(text);
+    
+    // Format Backticks as inline code
+    formatted = formatted.replace(/\`([^\`]+)\`/g, '<code class="message-code-block">$1</code>');
+    
+    // Format URLs as clickable links
+    const urlPattern = /(\\b(https?|ftp|file):\\/\\/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])/ig;
+    formatted = formatted.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    return formatted;
+}
+
+// ========================================================
+// 5. SWIPE-TO-SEND DRAGGABLE ROCKET LOGIC
 // ========================================================
 let isDragging = false;
 let startX = 0;
 let dragOffset = 0;
 let swipeStartTime = 0;
-const maxOffset = 88; // Slide limit inside channel
+const maxOffset = 88;
 
 function checkSwipeGuide() {
     const hasSwiped = localStorage.getItem("hasSwipedBefore") === "true";
-    if (!hasSwiped && postText.value.trim().length > 0) {
-        swipeGuide.classList.add("visible");
+    if (!hasSwiped && DOM.postText.value.trim().length > 0) {
+        DOM.swipeGuide.classList.add("visible");
     } else {
-        swipeGuide.classList.remove("visible");
+        DOM.swipeGuide.classList.remove("visible");
     }
 }
 
-postText.addEventListener("input", checkSwipeGuide);
+DOM.postText.addEventListener("input", checkSwipeGuide);
 
-// Drag Handlers
 function startDrag(e) {
-    if (e.target.closest('#message-form') || e.target === postText) return;
     isDragging = true;
     startX = e.clientX || (e.touches && e.touches[0].clientX);
     swipeStartTime = Date.now();
-    fireTrail.classList.add("active");
-    swipeRocket.style.transition = "none";
-    swipeGuide.classList.remove("visible");
+    DOM.fireTrail.classList.add("active");
+    DOM.swipeRocket.style.transition = "none";
+    DOM.swipeGuide.classList.remove("visible");
 }
 
 function handleDrag(e) {
@@ -1557,21 +1919,21 @@ function handleDrag(e) {
     if (dragOffset < 0) dragOffset = 0;
     if (dragOffset > maxOffset) dragOffset = maxOffset;
     
-    swipeRocket.style.transform = \`translateX(\${dragOffset}px)\`;
+    DOM.swipeRocket.style.transform = \`translateX(\${dragOffset}px)\`;
 }
 
 async function endDrag() {
     if (!isDragging) return;
     isDragging = false;
-    fireTrail.classList.remove("active");
+    DOM.fireTrail.classList.remove("active");
     
     const swipeEndTime = Date.now();
     const swipeDuration = swipeEndTime - swipeStartTime;
     
     if (dragOffset >= 80) {
-        const text = postText.value.trim();
+        const text = DOM.postText.value.trim();
         if (text) {
-            // ONLY SWIPING triggers launch sound and fire overlay!
+            // ONLY Swiping triggers launcher sound and full screen fire
             const isHighSpeed = swipeDuration < 160;
             playRocketLaunchSound(isHighSpeed);
             if (isHighSpeed) {
@@ -1589,39 +1951,32 @@ async function endDrag() {
 }
 
 function snapRocketBack() {
-    swipeRocket.style.transition = "transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.25)";
-    swipeRocket.style.transform = "translateX(0px)";
+    DOM.swipeRocket.style.transition = "transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.25)";
+    DOM.swipeRocket.style.transform = "translateX(0px)";
     dragOffset = 0;
     checkSwipeGuide();
 }
 
-// Bind Touch/Mouse Drag events
-swipeRocket.addEventListener("mousedown", startDrag);
+DOM.swipeRocket.addEventListener("mousedown", startDrag);
 window.addEventListener("mousemove", handleDrag);
 window.addEventListener("mouseup", endDrag);
 
-swipeRocket.addEventListener("touchstart", startDrag, { passive: true });
+DOM.swipeRocket.addEventListener("touchstart", startDrag, { passive: true });
 window.addEventListener("touchmove", handleDrag, { passive: false });
 window.addEventListener("touchend", endDrag);
 
-// ========================================================
-// 🚀 ROCKET CLICK TO SEND (NO FIRE, NO LOUD SOUND)
-// ========================================================
-swipeRocket.addEventListener("click", async (e) => {
-    // Only trigger click if they did not drag the rocket (dragOffset is very small or zero)
+// Rocket CLICK to Send (NO FIRE, NO LOUD LAUNCH SOUND)
+DOM.swipeRocket.addEventListener("click", async () => {
     if (dragOffset < 5) {
-        const text = postText.value.trim();
+        const text = DOM.postText.value.trim();
         if (!text) return;
         
-        // Hide tutorial guide
         localStorage.setItem("hasSwipedBefore", "true");
-        swipeGuide.classList.remove("visible");
+        DOM.swipeGuide.classList.remove("visible");
         
-        // Rocket slides smoothly to the right, then resets (NO FIRE, NO RUMBLE SOUND!)
-        swipeRocket.style.transition = "transform 180ms ease-in-out";
-        swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
+        DOM.swipeRocket.style.transition = "transform 180ms ease-in-out";
+        DOM.swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
         
-        // Send message cleanly
         await sendChatMessage(text);
         
         setTimeout(() => {
@@ -1630,72 +1985,259 @@ swipeRocket.addEventListener("click", async (e) => {
     }
 });
 
-// ========================================================
-// ⌨️ ENTER KEY PRESS SUBMIT FLOW (NO FIRE, NO LOUD SOUND)
-// ========================================================
-postText.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter") {
+// ENTER Key Press Submit flow (NO FIRE, NO LOUD SOUND)
+DOM.postText.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        const text = postText.value.trim();
+        const text = DOM.postText.value.trim();
         if (!text) return;
 
-        // Mark tutorial done
         localStorage.setItem("hasSwipedBefore", "true");
-        swipeGuide.classList.remove("visible");
+        DOM.swipeGuide.classList.remove("visible");
 
-        // 1. Rocket slides smoothly by itself (NO FIRE, NO RUMBLE SOUND!)
-        swipeRocket.style.transition = "transform 180ms ease-in-out";
-        swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
+        DOM.swipeRocket.style.transition = "transform 180ms ease-in-out";
+        DOM.swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
 
-        // 2. Clear text immediately and send message
-        postText.value = "";
         await sendChatMessage(text);
 
-        // 3. Snaps the rocket smoothly back after flight
         setTimeout(() => {
             snapRocketBack();
         }, 250);
     }
 });
+
+// ========================================================
+// 6. INCREMENTAL DOM RENDERING & STATUS MANAGEMENT
+// ========================================================
+
+// Update Header Connection Status Indicator
+function setConnectionStatus(state) {
+    if (state === "connected") {
+        DOM.statusIndicatorDot.className = "status-dot connected";
+        DOM.statusIndicatorText.textContent = "Connected";
+        STATE.isOffline = false;
+    } else if (state === "syncing") {
+        DOM.statusIndicatorDot.className = "status-dot syncing";
+        DOM.statusIndicatorText.textContent = "Syncing...";
+    } else if (state === "offline") {
+        DOM.statusIndicatorDot.className = "status-dot offline";
+        DOM.statusIndicatorText.textContent = "Offline";
+        STATE.isOffline = true;
+    }
+}
+
+// Check if user is scrolled near the bottom of messages container
+function checkScrollPosition() {
+    const threshold = 120; // px from bottom
+    const totalHeight = DOM.messagesContainer.scrollHeight;
+    const currentScroll = DOM.messagesContainer.scrollTop + DOM.messagesContainer.clientHeight;
+    
+    STATE.isUserAtBottom = (totalHeight - currentScroll) <= threshold;
+    
+    if (STATE.isUserAtBottom) {
+        DOM.newMessagesDock.classList.remove("visible");
+        STATE.unreadNewMessages = 0;
+    }
+}
+
+DOM.messagesContainer.addEventListener("scroll", checkScrollPosition);
+
+DOM.newMessagesDock.addEventListener("click", () => {
+    STATE.isUserAtBottom = true;
+    DOM.newMessagesDock.classList.remove("visible");
+    STATE.unreadNewMessages = 0;
+    scrollToBottom();
+});
+
+// Incremental bubble creation (Never wipes the DOM!)
+function renderSingleMessageBubble(msg, animate = false) {
+    if (STATE.renderedMessageIds.has(msg.id)) {
+        // If it's already rendered, just verify its status elements if modified
+        const bubble = document.getElementById(\`msg-bubble-\${msg.id}\`);
+        if (bubble) {
+            updateMessageBubbleStatus(bubble, msg);
+        }
+        return;
+    }
+
+    const isMe = msg.sender.includes(\`User \${STATE.userNumberTag}\`);
+    
+    const row = document.createElement("div");
+    row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
+    row.id = \`msg-row-\${msg.id}\`;
+    
+    if (animate) {
+        row.classList.add("animate-in");
+    }
+
+    const formattedText = formatMessageText(msg.translated_text || msg.original_text || msg.text);
+    const isOriginal = msg.original_lang === STATE.selectedLanguage;
+    
+    // Bubble Style Outlines conform to guidelines
+    const bubbleStyle = isMe
+        ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
+        : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
+
+    let metaString = isOriginal ? \`Original: \${msg.original_lang_name}\` : \`Translated from \${msg.original_lang_name}\`;
+    const toggleBtnHtml = !isOriginal
+        ? \`<button onclick="toggleSingleBubbleTranslation('\${msg.id}')" id="btn-trans-toggle-\${msg.id}" class="translation-toggle-link" aria-label="Toggle original text">Show Original</button>\`
+        : '';
+
+    row.innerHTML = \`
+        \${!isMe ? \`
+            <div class="message-header-row">
+                <span class="message-sender-avatar" aria-hidden="true">\${msg.avatar || "🦁"}</span>
+                <span class="message-sender-name">\${msg.sender}</span>
+            </div>
+        \` : ''}
+        
+        <div class="message-bubble-wrapper max-w-[80%] md:max-w-[70%] flex flex-col \${isMe ? 'items-end' : 'items-start'}" id="msg-bubble-\${msg.id}">
+            <div class="\${bubbleStyle} break-words w-full message-text-content">
+                <span id="text-body-\${msg.id}">\${formattedText}</span>
+                
+                \${!isOriginal ? \`
+                    <div id="box-translation-\${msg.id}" class="translation-box hidden" aria-live="polite">
+                        Original: "\${escapeHTML(msg.original_text || msg.text)}"
+                    </div>
+                \` : ''}
+            </div>
+            
+            <div class="message-meta-row">
+                <span id="status-time-\${msg.id}">\${msg.timestamp.includes(" ") ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>
+                <span>•</span>
+                <span id="status-lang-\${msg.id}">\${metaString}</span>
+                \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
+                <span id="status-tick-\${msg.id}" class="message-status-icon ml-1"></span>
+            </div>
+        </div>
+    \`;
+
+    // Append to container
+    let innerContainer = DOM.messagesContainer.querySelector(".chat-messages-inner");
+    if (!innerContainer) {
+        DOM.messagesContainer.innerHTML = '<div class="chat-messages-inner"></div>';
+        innerContainer = DOM.messagesContainer.querySelector(".chat-messages-inner");
+    }
+    
+    innerContainer.appendChild(row);
+    STATE.renderedMessageIds.add(msg.id);
+    
+    // Update initial status icons
+    const bubbleWrapper = row.querySelector(".message-bubble-wrapper");
+    updateMessageBubbleStatus(bubbleWrapper, msg);
+}
+
+// Update state/checkmark inside bubble dynamically
+function updateMessageBubbleStatus(wrapper, msg) {
+    const tickSpan = wrapper.querySelector('[id^="status-tick-"]');
+    if (!tickSpan) return;
+
+    if (msg.isPending) {
+        tickSpan.innerHTML = '<i class="fa-regular fa-clock text-[#A5A5A5] animate-pulse" title="Sending..."></i>';
+    } else if (msg.isFailed) {
+        tickSpan.innerHTML = \`<span onclick="retryMessageDelivery('\${msg.id}', '\${escapeHTML(msg.original_text)}')" class="status-failed-indicator" title="Failed. Click to retry!"><i class="fa-solid fa-circle-exclamation"></i> Retry</span>\`;
+    } else {
+        // Sent state
+        tickSpan.innerHTML = '<i class="fa-solid fa-check text-emerald-500" title="Sent ✓"></i>';
+    }
+}
+
+// Single Bubble Translation Toggler
+window.toggleSingleBubbleTranslation = function(msgId) {
+    const box = document.getElementById(\`box-translation-\${msgId}\`);
+    const btn = document.getElementById(\`btn-trans-toggle-\${msgId}\`);
+    if (!box || !btn) return;
+
+    if (box.classList.contains("hidden")) {
+        box.classList.remove("hidden");
+        btn.textContent = "Hide Original";
+    } else {
+        box.classList.add("hidden");
+        btn.textContent = "Show Original";
+    }
+    
+    if (STATE.isUserAtBottom) {
+        scrollToBottom();
+    }
+};
+
+// Complete Feed Render (Only used on language changes or initialization)
+function renderAllMessagesFeed(forceScroll = false) {
+    // Clear DOM and Set
+    DOM.messagesContainer.innerHTML = '<div class="chat-messages-inner"></div>';
+    STATE.renderedMessageIds.clear();
+    
+    if (STATE.messagesData.length === 0) {
+        DOM.messagesContainer.innerHTML = \`
+            <div class="h-full flex flex-col items-center justify-center text-center text-xs text-neutral-400 p-6">
+                <i class="fa-regular fa-comment-dots text-3xl text-neutral-600 mb-2"></i>
+                <h4 class="font-bold text-neutral-300 text-sm">No Messages yet</h4>
+                <p class="max-w-xs mt-1 text-neutral-500">Be the first to join the chat and write a message in any language!</p>
+            </div>
+        \`;
+        return;
+    }
+
+    STATE.messagesData.forEach(msg => {
+        renderSingleMessageBubble(msg, false);
+    });
+    
+    if (forceScroll) {
+        scrollToBottom();
+    }
+}
 
 // ========================================================
 // 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
 // ========================================================
 async function sendChatMessage(text) {
-    postText.value = "";
+    DOM.postText.value = "";
+    autoResizeInput();
     snapRocketBack();
     
     const tempMsgId = \`temp_\${Date.now()}\`;
     const optimisticMsg = {
         id: tempMsgId,
-        sender: \`\${currentAvatar} User \${userNumberTag}\`,
-        avatar: currentAvatar,
+        sender: \`\${STATE.currentAvatar} User \${STATE.userNumberTag}\`,
+        avatar: STATE.currentAvatar,
         text: text,
         original_text: text,
-        original_lang: selectedLanguage,
-        original_lang_name: selectedLanguageName,
+        original_lang: STATE.selectedLanguage,
+        original_lang_name: STATE.selectedLanguageName,
         translated_text: text,
         timestamp: "sending...",
-        isPending: true
+        isPending: true,
+        isFailed: false
     };
     
-    // Instant UI injection
-    messagesData.push(optimisticMsg);
-    renderMessages();
-    scrollToBottom();
+    // Optimistic Append instantly (0ms response time!)
+    STATE.messagesData.push(optimisticMsg);
+    renderSingleMessageBubble(optimisticMsg, true);
     
+    if (STATE.isUserAtBottom) {
+        scrollToBottom();
+    }
+
+    await executePostMessage(tempMsgId, text);
+}
+
+async function executePostMessage(tempMsgId, text) {
     try {
+        setConnectionStatus("syncing");
         const response = await fetch("/api/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: \`\${currentAvatar} User \${userNumberTag}\`, avatar: currentAvatar, text })
+            body: JSON.stringify({ sender: \`\${STATE.currentAvatar} User \${STATE.userNumberTag}\`, avatar: STATE.currentAvatar, text })
         });
         
         if (response.ok) {
+            setConnectionStatus("connected");
             const serverMsg = await response.json();
-            const index = messagesData.findIndex(m => m.id === tempMsgId);
-            if (index !== -1) {
-                messagesData[index] = {
+            
+            // Sync with local array
+            const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
+            if (idx !== -1) {
+                STATE.messagesData[idx] = {
                     id: serverMsg.id,
                     sender: serverMsg.sender,
                     avatar: serverMsg.avatar,
@@ -1703,54 +2245,119 @@ async function sendChatMessage(text) {
                     original_lang: serverMsg.original_lang,
                     original_lang_name: serverMsg.original_lang_name,
                     translated_text: serverMsg.text,
-                    timestamp: serverMsg.timestamp
+                    timestamp: serverMsg.timestamp,
+                    isPending: false,
+                    isFailed: false
                 };
+                
+                // Clear old temporary mapped element and re-render bubble with real ID
+                const tempBubbleRow = document.getElementById(\`msg-row-\${tempMsgId}\`);
+                if (tempBubbleRow) tempBubbleRow.remove();
+                STATE.renderedMessageIds.delete(tempMsgId);
+                
+                renderSingleMessageBubble(STATE.messagesData[idx], false);
             }
-            clientTranslationCache[selectedLanguage] = messagesData;
-            renderMessages();
+            
+            // Cache state
+            STATE.clientTranslationCache[STATE.selectedLanguage] = STATE.messagesData;
         } else {
-            messagesData = messagesData.filter(m => m.id !== tempMsgId);
-            renderMessages();
-            alert("Message Delivery Failed");
+            markMessageFailed(tempMsgId);
         }
     } catch (err) {
-        console.error(err);
-        messagesData = messagesData.filter(m => m.id !== tempMsgId);
-        renderMessages();
+        console.error("Deliver error:", err);
+        markMessageFailed(tempMsgId);
     }
 }
 
+function markMessageFailed(tempMsgId) {
+    setConnectionStatus("offline");
+    const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
+    if (idx !== -1) {
+        STATE.messagesData[idx].isPending = false;
+        STATE.messagesData[idx].isFailed = true;
+        
+        const wrapper = document.getElementById(\`msg-bubble-\${tempMsgId}\`);
+        if (wrapper) {
+            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
+        }
+    }
+}
+
+window.retryMessageDelivery = async function(tempMsgId, text) {
+    // Set back to sending status
+    const idx = STATE.messagesData.findIndex(m => m.id === tempMsgId);
+    if (idx !== -1) {
+        STATE.messagesData[idx].isPending = true;
+        STATE.messagesData[idx].isFailed = false;
+        
+        const wrapper = document.getElementById(\`msg-bubble-\${tempMsgId}\`);
+        if (wrapper) {
+            updateMessageBubbleStatus(wrapper, STATE.messagesData[idx]);
+        }
+    }
+    
+    await executePostMessage(tempMsgId, text);
+};
+
 // ========================================================
-// 🔄 STALE-WHILE-REVALIDATE REFRESH LOOPS
+// 🔄 STALE-WHILE-REVALIDATE BACKGROUND SYNC
 // ========================================================
 async function fetchMessages(forceScroll = false) {
-    // SWR Cache trigger (0ms transition)
-    if (clientTranslationCache[selectedLanguage]) {
-        messagesData = clientTranslationCache[selectedLanguage];
-        renderMessages();
-        if (forceScroll) scrollToBottom();
+    if (STATE.isSyncing) return;
+    STATE.isSyncing = true;
+    
+    // SWR Local Cache trigger (0ms instant change!)
+    if (STATE.clientTranslationCache[STATE.selectedLanguage]) {
+        STATE.messagesData = STATE.clientTranslationCache[STATE.selectedLanguage];
+        if (STATE.renderedMessageIds.size === 0) {
+            renderAllMessagesFeed(forceScroll);
+        }
     }
 
     try {
-        openModalBtn.classList.add("animate-pulse");
-
-        const res = await fetch(\`/api/messages?lang=\${selectedLanguage}\`);
+        setConnectionStatus("syncing");
+        const res = await fetch(\`/api/messages?lang=\${STATE.selectedLanguage}\`);
         const data = await res.json();
+        setConnectionStatus("connected");
         
-        openModalBtn.classList.remove("animate-pulse");
+        const freshMessages = data.messages;
+        
+        // Incremental insertion check
+        let isNewInserted = false;
+        freshMessages.forEach(newMsg => {
+            // If message isn't in local array, insert it
+            const exists = STATE.messagesData.some(m => m.id === newMsg.id);
+            if (!exists) {
+                STATE.messagesData.push(newMsg);
+                renderSingleMessageBubble(newMsg, true);
+                isNewInserted = true;
+                
+                // If user is scrolled up, count unread messages
+                if (!STATE.isUserAtBottom) {
+                    STATE.unreadNewMessages++;
+                }
+            }
+        });
 
-        const isNewMessageAdded = data.messages.length !== messagesData.length;
-        messagesData = data.messages;
+        STATE.messagesData = freshMessages;
+        STATE.clientTranslationCache[STATE.selectedLanguage] = STATE.messagesData;
         
-        clientTranslationCache[selectedLanguage] = messagesData;
-        renderMessages();
-        
-        if (isNewMessageAdded || forceScroll) {
+        // Handle floating dock button alert
+        if (STATE.unreadNewMessages > 0 && !STATE.isUserAtBottom) {
+            DOM.newMessagesDock.querySelector("span").textContent = \`\${STATE.unreadNewMessages} New Messages\`;
+            DOM.newMessagesDock.classList.add("visible");
+        }
+
+        if (isNewInserted && STATE.isUserAtBottom) {
+            scrollToBottom();
+        } else if (forceScroll) {
             scrollToBottom();
         }
     } catch (err) {
-        console.error("Sync error:", err);
-        openModalBtn.classList.remove("animate-pulse");
+        console.error("Sync feed error:", err);
+        setConnectionStatus("offline");
+    } finally {
+        STATE.isSyncing = false;
     }
 }
 
@@ -1769,49 +2376,91 @@ function startAutoRefreshTimer() {
     }, 1000);
 }
 
-manualRefreshBtn.addEventListener("click", () => {
+DOM.manualRefreshBtn.addEventListener("click", () => {
     fetchMessages(true);
     startAutoRefreshTimer();
-    const icon = manualRefreshBtn.querySelector("i");
+    const icon = DOM.manualRefreshBtn.querySelector("i");
     icon.classList.add("fa-spin");
     setTimeout(() => icon.classList.remove("fa-spin"), 500);
 });
 
 // ========================================================
-// 🌍 LANGUAGE SELECT MODAL LOGIC
+// 🌍 LANGUAGE SELECT MODAL LOGIC WITH KEYBOARD ACTIONS
 // ========================================================
 async function fetchLanguages() {
     try {
         const res = await fetch("/api/languages");
         const data = await res.json();
-        languages = data.languages;
+        STATE.languages = data.languages;
         renderLanguages();
     } catch (err) {
-        console.error("Failed to load languages list:", err);
+        console.error("Languages load error:", err);
     }
 }
 
 function renderLanguages(filter = "") {
     const cleanFilter = filter.toLowerCase().trim();
-    popularLangsGrid.innerHTML = "";
-    allLangsGrid.innerHTML = "";
+    DOM.popularLangsGrid.innerHTML = "";
+    DOM.allLangsGrid.innerHTML = "";
+    DOM.recentLangsGrid.innerHTML = "";
+    DOM.systemLangsGrid.innerHTML = "";
+    
     let matchCount = 0;
 
-    languages.forEach(lang => {
+    // A. Populate Device & Auto Detect items
+    const deviceLangCode = (navigator.language || "en").split("-")[0];
+    const deviceLangName = LANG_CODE_TO_NAME[deviceLangCode] || "Device Language";
+    
+    // Auto Detect button
+    const autoBtn = document.createElement("button");
+    autoBtn.type = "button";
+    autoBtn.className = STATE.selectedLanguage === "auto" ? "lang-btn active" : "lang-btn";
+    autoBtn.innerHTML = \`<span>Auto Detect</span><span class="lang-code">auto</span>\`;
+    autoBtn.onclick = () => selectLanguage("auto", "Auto Detect");
+    DOM.systemLangsGrid.appendChild(autoBtn);
+
+    // Device Language button
+    const deviceBtn = document.createElement("button");
+    deviceBtn.type = "button";
+    deviceBtn.className = STATE.selectedLanguage === deviceLangCode ? "lang-btn active" : "lang-btn";
+    deviceBtn.innerHTML = \`<span>System (\${deviceLangName})</span><span class="lang-code">\${deviceLangCode}</span>\`;
+    deviceBtn.onclick = () => selectLanguage(deviceLangCode, deviceLangName);
+    DOM.systemLangsGrid.appendChild(deviceBtn);
+
+    // B. Populate Recent Languages
+    if (STATE.recentLanguages.length > 0 && !cleanFilter) {
+        DOM.recentLangsSection.classList.remove("hidden");
+        STATE.recentLanguages.forEach(code => {
+            const name = LANG_CODE_TO_NAME[code];
+            if (name) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = STATE.selectedLanguage === code ? "lang-btn active" : "lang-btn";
+                btn.innerHTML = \`<span>\${name}</span><span class="lang-code">\${code}</span>\`;
+                btn.onclick = () => selectLanguage(code, name);
+                DOM.recentLangsGrid.appendChild(btn);
+            }
+        });
+    } else {
+        DOM.recentLangsSection.classList.add("hidden");
+    }
+
+    // C. Populate Popular and All
+    STATE.languages.forEach(lang => {
         const name = lang.name;
         const code = lang.code;
-        const isSelected = selectedLanguage === code;
+        const isSelected = STATE.selectedLanguage === code;
         
         const matches = name.toLowerCase().includes(cleanFilter) || code.toLowerCase().includes(cleanFilter);
         const btnClass = isSelected ? "lang-btn active" : "lang-btn";
 
-        if (popularCodes.includes(code) && !cleanFilter) {
+        if (CONFIG.popularCodes.includes(code) && !cleanFilter) {
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = btnClass;
             btn.innerHTML = \`<span>\${name}</span><span class="lang-code">\${code}</span>\`;
             btn.onclick = () => selectLanguage(code, name);
-            popularLangsGrid.appendChild(btn);
+            DOM.popularLangsGrid.appendChild(btn);
         }
 
         if (matches) {
@@ -1821,23 +2470,20 @@ function renderLanguages(filter = "") {
             btn.className = btnClass;
             btn.innerHTML = \`<span>\${name}</span><span class="lang-code">\${code}</span>\`;
             btn.onclick = () => selectLanguage(code, name);
-            allLangsGrid.appendChild(btn);
+            DOM.allLangsGrid.appendChild(btn);
         }
     });
 
-    const popHeading = popularLangsGrid.parentElement;
     if (cleanFilter) {
-        popHeading.classList.add("hidden");
         document.getElementById("all-langs-header").textContent = \`Search Results (\${matchCount})\`;
     } else {
-        popHeading.classList.remove("hidden");
         document.getElementById("all-langs-header").textContent = "All Languages";
     }
 }
 
 async function runAISuggestion(q) {
     if (!q || q.trim().length < 2) {
-        aiSuggestionBox.classList.add("hidden");
+        DOM.aiSuggestionBox.classList.add("hidden");
         return;
     }
     try {
@@ -1845,8 +2491,8 @@ async function runAISuggestion(q) {
         const data = await res.json();
         
         if (data.suggestions && data.suggestions.length > 0) {
-            aiSuggestionBox.classList.remove("hidden");
-            aiSuggestionList.innerHTML = "";
+            DOM.aiSuggestionBox.classList.remove("hidden");
+            DOM.aiSuggestionList.innerHTML = "";
             
             data.suggestions.forEach(s => {
                 const chip = document.createElement("button");
@@ -1854,175 +2500,111 @@ async function runAISuggestion(q) {
                 chip.className = "ai-chip";
                 chip.innerHTML = \`\${s.name} <span class="text-[8px] opacity-60 font-mono">\${s.code}</span>\`;
                 chip.onclick = () => selectLanguage(s.code, s.name);
-                aiSuggestionList.appendChild(chip);
+                DOM.aiSuggestionList.appendChild(chip);
             });
         } else {
-            aiSuggestionBox.classList.add("hidden");
+            DOM.aiSuggestionBox.classList.add("hidden");
         }
     } catch (err) {
         console.error("AI Suggestion error:", err);
     }
 }
 
-langSearchInput.addEventListener("input", (e) => {
+DOM.langSearchInput.addEventListener("input", (e) => {
     const q = e.target.value;
     renderLanguages(q);
     runAISuggestion(q);
 });
 
 function selectLanguage(code, name) {
-    selectedLanguage = code;
-    selectedLanguageName = name;
+    STATE.selectedLanguage = code;
+    STATE.selectedLanguageName = name;
     localStorage.setItem("selectedLanguageCode", code);
     localStorage.setItem("selectedLanguageName", name);
     
-    currentLangText.textContent = name;
+    // Save to Recent Languages list
+    if (!STATE.recentLanguages.includes(code) && code !== "auto") {
+        STATE.recentLanguages.unshift(code);
+        if (STATE.recentLanguages.length > 4) {
+            STATE.recentLanguages.pop(); // Cap at 4 items
+        }
+        localStorage.setItem("recentLanguages", JSON.stringify(STATE.recentLanguages));
+    }
+    
+    DOM.currentLangText.textContent = name;
+    
+    // Clear elements and do a full-page translated re-render (since language code changed!)
+    renderAllMessagesFeed(true);
     fetchMessages(true);
     closeLanguageModal();
 }
 
 function openLanguageModal() {
-    langModal.classList.add("active");
-    langSearchInput.value = "";
+    DOM.langModal.classList.add("active");
+    DOM.langSearchInput.value = "";
     renderLanguages("");
-    aiSuggestionBox.classList.add("hidden");
-    langSearchInput.focus();
+    DOM.aiSuggestionBox.classList.add("hidden");
+    DOM.langSearchInput.focus();
 }
 
 function closeLanguageModal() {
-    langModal.classList.remove("active");
+    DOM.langModal.classList.remove("active");
+    DOM.postText.focus(); // Retain input focus
 }
 
-openModalBtn.addEventListener("click", openLanguageModal);
-closeModalBtn.addEventListener("click", closeLanguageModal);
+DOM.openModalBtn.addEventListener("click", openLanguageModal);
+DOM.closeModalBtn.addEventListener("click", closeLanguageModal);
 
+// Accessibility and Keyboard Navigation inside modal
 window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && langModal.classList.contains("active")) closeLanguageModal();
-});
-langModal.addEventListener("click", (e) => {
-    if (e.target === langModal) closeLanguageModal();
-});
-
-// ========================================================
-// 📦 GENERAL LAYOUT INITIALIZATION
-// ========================================================
-function scrollToBottom() {
-    setTimeout(() => {
-        messagesContainer.scrollTo({
-            top: messagesContainer.scrollHeight,
-            behavior: 'smooth'
-        });
-    }, 50); // Fast scroll response
-}
-
-// Render clean premium chat bubbles with enlarged text
-function renderMessages() {
-    if (messagesData.length === 0) {
-        messagesContainer.innerHTML = \`
-            <div class="h-full flex flex-col items-center justify-center text-center text-xs text-neutral-400 p-6">
-                <i class="fa-regular fa-comment-dots text-3xl text-neutral-600 mb-2"></i>
-                <h4 class="font-bold text-neutral-300 text-sm">No Messages yet</h4>
-                <p class="max-w-xs mt-1 text-neutral-500">Be the first to join the chat and write a message in any language!</p>
-            </div>
-        \`;
-        return;
+    if (e.key === "Escape" && DOM.langModal.classList.contains("active")) {
+        closeLanguageModal();
     }
+});
 
-    messagesContainer.innerHTML = "";
+// Arrow key navigation inside lists
+DOM.langModal.addEventListener("keydown", (e) => {
+    if (!DOM.langModal.classList.contains("active")) return;
     
-    const wrapper = document.createElement("div");
-    wrapper.className = "chat-messages-inner";
-
-    messagesData.forEach(msg => {
-        const isMe = msg.sender.includes(\`User \${userNumberTag}\`);
-        const isOriginal = msg.original_lang === selectedLanguage;
-        
-        const row = document.createElement("div");
-        row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
-
-        // Left Bubble: White, Crisp outline border border-neutral-300, shadow
-        // Right Bubble: Blue gradient, Crisp outline border border-blue-600/30
-        const bubbleStyle = isMe
-            ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
-            : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
-
-        let metaString = "";
-        if (!isOriginal) {
-            metaString = \`Translated from \${msg.original_lang_name}\`;
-        } else {
-            metaString = \`Original: \${msg.original_lang_name}\`;
-        }
-
-        const toggleBtnHtml = !isOriginal
-            ? \`<button onclick="toggleOriginal('\${msg.id}')" id="btn-orig-\${msg.id}" class="original-text-link">Show Original</button>\`
-            : '';
-
-        const statusHtml = msg.isPending 
-            ? \`<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>\`
-            : \`<span>\${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>\`;
-
-        row.innerHTML = \`
-            <!-- Sender Name (ENLARGED to text-xs, Font-ExtraBold, and highly defined) -->
-            \${!isMe ? \`<span class="text-xs font-extrabold text-neutral-400 ml-1 flex items-center gap-1">\${msg.sender}</span>\` : ''}
-            
-            <!-- Message Bubble Body -->
-            <div class="max-w-[80%] md:max-w-[70%] flex flex-col \${isMe ? 'items-end' : 'items-start'}">
-                <div class="\${bubbleStyle} break-words w-full">
-                    \${msg.translated_text}
-                </div>
-                
-                <!-- Mini Bubble Footer -->
-                <div class="flex items-center gap-1.5 mt-1 px-1 text-[9px] text-neutral-500 font-medium">
-                    \${statusHtml}
-                    <span>•</span>
-                    <span>\${metaString}</span>
-                    \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
-                </div>
-
-                <!-- Expandable Original box -->
-                \${!isOriginal ? \`
-                    <div id="box-orig-\${msg.id}" class="hidden mt-1.5 border-l-2 border-neutral-300 pl-2.5 py-0.5 text-[10px] text-neutral-500 italic">
-                        Original: "\${msg.original_text}"
-                    </div>
-                \` : ''}
-            </div>
-        \`;
-        wrapper.appendChild(row);
-    });
-
-    messagesContainer.appendChild(wrapper);
-}
-
-window.toggleOriginal = function(msgId) {
-    const box = document.getElementById(\`box-orig-\${msgId}\`);
-    const btn = document.getElementById(\`btn-orig-\${msgId}\`);
-    if (box.classList.contains("hidden")) {
-        box.classList.remove("hidden");
-        btn.textContent = "Hide Original";
-        scrollToBottom();
-    } else {
-        box.classList.add("hidden");
-        btn.textContent = "Show Original";
+    const activeBtn = document.activeElement;
+    if (!activeBtn || (!activeBtn.classList.contains("lang-btn") && !activeBtn.classList.contains("ai-chip") && activeBtn !== DOM.langSearchInput)) return;
+    
+    const focusable = Array.from(DOM.langModal.querySelectorAll("button, input"));
+    const idx = focusable.indexOf(activeBtn);
+    
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const nextIdx = (idx + 1) % focusable.length;
+        focusable[nextIdx].focus();
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prevIdx = (idx - 1 + focusable.length) % focusable.length;
+        focusable[prevIdx].focus();
     }
-};
+});
+
+DOM.langModal.addEventListener("click", (e) => {
+    if (e.target === DOM.langModal) closeLanguageModal();
+});
 
 // ========================================================
-// 📦 ROBUST ASYNC ERROR RECOVERY BOOTSTRAPPING
+// 📦 BOOTSTRAP INIT LOOPS
 // ========================================================
 (async function init() {
-    currentLangText.textContent = selectedLanguageName;
+    DOM.currentLangText.textContent = STATE.selectedLanguageName;
     
-    // Robust separate try-catches so if one API fails, the other still loads and works perfectly!
+    // Isolated try-catches prevent cascading failures!
     try {
         await fetchLanguages();
     } catch(err) {
-        console.error("Async load languages error:", err);
+        console.error("Bootstrap language fetch error:", err);
     }
 
     try {
-        await fetchMessages(true); // Initial load scroll to bottom
+        // Initial load with full-page scroll down
+        await fetchMessages(true);
     } catch(err) {
-        console.error("Async load messages error:", err);
+        console.error("Bootstrap message fetch error:", err);
     }
     
     startAutoRefreshTimer();

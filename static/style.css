@@ -1,51 +1,59 @@
 /* 
 ========================================================
-BhashaSetu Premium Messenger — Single-Page Chat Stylesheet
-Highly polished, single-feed layout with immersive animations
+BhashaSetu — Premium Dark Theme Chat Stylesheet
+Production-Ready CSS conforming to strict guidelines
 ========================================================
 */
 
 :root {
-    /* Colors */
+    /* Color Palette */
     --bg-color: #0F1115;
+    --bg-surface: #171A21;
     --bg-header: #12151B;
-    --bg-input: #1B1E26;
+    --bg-input: #1C1F26;
+    --bg-bubble-incoming: #1E222B;
+    --bg-bubble-outgoing: #4F8CFF;
+    
+    /* Accents & Borders */
     --accent-color: #4F8CFF;
-    --accent-hover: #3b76e0;
+    --accent-hover: #357AE8;
+    --border-color: rgba(255, 255, 255, 0.06);
+    --border-color-focus: rgba(79, 140, 255, 0.4);
+    
+    /* Text Colors */
     --text-primary: #F5F5F5;
     --text-secondary: #A5A5A5;
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-color-focus: rgba(79, 140, 255, 0.3);
-    
-    /* Bubble Colors */
-    --bubble-outgoing: #4F8CFF;
-    --bubble-incoming: #1E222B;
-    --bubble-incoming-border: rgba(255, 255, 255, 0.03);
+    --text-muted: #7A7A7A;
     
     /* Typography Font Sizes */
-    --font-chat: 16px;
+    --font-chat-desktop: 16px;
     --font-chat-mobile: 15px;
     --font-time: 12px;
+    --font-sidebar: 15px;
+    --font-search: 15px;
     --font-input: 16px;
     --font-title: 17px;
     --font-subtitle: 13px;
     
-    /* Sizing & Dimensions */
+    /* Layout Sizing */
     --header-height-desktop: 64px;
     --header-height-mobile: 56px;
-    --input-height-desktop: 76px;
-    --input-height-mobile: 72px;
+    --input-height-desktop: 60px;
+    --input-height-mobile: 56px;
     
     /* Radii */
     --border-radius: 12px;
     --bubble-radius: 18px;
     --input-radius: 28px;
     
-    /* Animations */
+    /* Animations & Transitions */
     --transition-speed: 200ms;
-    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* ========================================================
+   1. CORE RESET & BODY STYLES
+   ======================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -60,33 +68,53 @@ body, html {
     font-family: var(--font-family);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* App Wrapper - Single Column Chat Panel */
+/* App Master Layout */
 .app-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     height: 100%;
     position: relative;
+    background-color: var(--bg-color);
 }
 
-/* Custom Scrollbars */
-.custom-scroll::-webkit-scrollbar {
-    width: 5px;
+/* Custom Thin & Auto-hiding Scrollbar */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
+
+.custom-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
 .custom-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
+
 .custom-scroll::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
-}
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.15);
+    transition: background var(--transition-speed);
 }
 
-/* Header (64px Tall Desktop) */
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Keyboard Accessibility Focus styles */
+*:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* ========================================================
+   2. HEADER CONTAINER (64px Desktop / 56px Mobile)
+   ======================================================== */
 .chat-header {
     height: var(--header-height-desktop);
     background-color: var(--bg-header);
@@ -96,7 +124,7 @@ body, html {
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
-    z-index: 15;
+    z-index: 30;
     user-select: none;
 }
 
@@ -104,6 +132,7 @@ body, html {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
 }
 
 .header-avatar {
@@ -116,20 +145,66 @@ body, html {
     justify-content: center;
     font-size: 16px;
     font-weight: bold;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.header-details {
+    min-width: 0;
 }
 
 .header-title {
     font-size: var(--font-title);
     font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-subtitle-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 1px;
+}
+
+/* Connection Status Dot (No blinking, highly professional) */
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: background-color var(--transition-speed);
+}
+
+.status-dot.connected {
+    background-color: #2ec4b6; /* Green */
+}
+
+.status-dot.syncing {
+    background-color: #ffb703; /* Orange */
+    animation: statusPulse 1s infinite alternate;
+}
+
+.status-dot.offline {
+    background-color: #e63946; /* Red */
+}
+
+@keyframes statusPulse {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
 }
 
 .header-subtitle {
     font-size: var(--font-subtitle);
     color: var(--text-secondary);
-    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Header Actions */
+/* Header Actions Panel */
 .header-actions {
     display: flex;
     align-items: center;
@@ -145,7 +220,7 @@ body, html {
     padding: 6px 14px;
     border-radius: 16px;
     cursor: pointer;
-    transition: background-color var(--transition-speed);
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -154,13 +229,14 @@ body, html {
 
 .header-btn:hover {
     background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .header-icon-btn {
     background: none;
     border: none;
     color: var(--text-secondary);
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
     padding: 6px;
     border-radius: 50%;
@@ -178,20 +254,32 @@ body, html {
     background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Chat Canvas area with Repeating Doodle Vector SVG Background */
+/* ========================================================
+   3. CHAT CANVAS & VECTOR SVG PATTERN WALLPAPER
+   ======================================================== */
+.chat-window {
+    flex-grow: 1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 .chat-messages-container {
-    height: 100%;
+    flex-grow: 1;
     width: 100%;
     overflow-y: auto;
     position: relative;
     
-    /* 100% Vector SVG doodle background repeating seamless forever */
+    /* 100% Seamless Repeating Vector SVG Doodle Pattern */
     background-image: url('chat-pattern.svg');
     background-repeat: repeat;
     background-size: 420px;
     
     padding: 24px;
-    padding-bottom: 100px; /* Crucial: ensures scroll ends completely above the blurred input dock */
+    padding-bottom: 92px; /* Prevent floating input overlap */
+    scroll-behavior: smooth;
 }
 
 .chat-messages-inner {
@@ -203,94 +291,204 @@ body, html {
     gap: 8px; /* Strict 8px space between messages */
 }
 
-/* Message Bubble Rows */
+/* ========================================================
+   4. MESSAGE BUBBLES LAYOUT & STATUS STATES
+   ======================================================== */
 .message-row {
     width: 100%;
     display: flex;
     flex-direction: column;
-    animation: messageFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    margin-bottom: 2px;
 }
 
-@keyframes messageFadeIn {
-    0% { opacity: 0; transform: translateY(8px); }
-    100% { opacity: 1; transform: translateY(0); }
+/* Message Fade-In Slide-Up (Strict 200ms) */
+.message-row.animate-in {
+    animation: messageAppear 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.message-row.incoming { align-items: flex-start; }
-.message-row.outgoing { align-items: flex-end; }
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-.message-sender {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-secondary);
+.message-row.incoming {
+    align-items: flex-start;
+}
+
+.message-row.outgoing {
+    align-items: flex-end;
+}
+
+/* Alignment Row for Name and Avatar */
+.message-header-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 3px;
     margin-left: 6px;
     user-select: none;
 }
 
+.message-sender-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-sender-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Message Bubble */
 .message-bubble {
-    max-width: 72%;
-    padding: 12px 16px;
-    border-radius: var(--bubble-radius);
-    font-size: var(--font-chat);
+    padding: 12px 16px; /* Strict guidelines */
+    border-radius: var(--bubble-radius); /* Strict 18px radius */
+    font-size: var(--font-chat-desktop);
     line-height: 1.5;
     position: relative;
     word-wrap: break-word;
+    word-break: break-word;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Width limits (72% Desktop / 82% Mobile) */
 .message-row.incoming .message-bubble {
-    background-color: var(--bubble-incoming);
+    max-width: 72%;
+    background-color: var(--bg-surface);
     color: var(--text-primary);
     border-top-left-radius: 4px;
     border: 1px solid var(--bubble-incoming-border);
 }
 
 .message-row.outgoing .message-bubble {
-    background-color: var(--bubble-outgoing);
+    max-width: 72%;
+    background-color: var(--bg-bubble-outgoing);
     color: #ffffff;
     border-top-right-radius: 4px;
 }
 
-.message-meta-info {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 6px;
-    font-size: var(--font-time);
-    margin-top: 2px;
+/* Text Formatting (Code Blocks, Clickable Links) */
+.message-text-content a {
+    color: #89afff;
+    text-decoration: underline;
 }
 
-.message-row.incoming .message-meta-info { color: var(--text-secondary); }
-.message-row.outgoing .message-meta-info { color: rgba(255, 255, 255, 0.7); }
+.message-row.outgoing .message-text-content a {
+    color: #ffffff;
+    text-decoration: underline;
+}
 
-.original-text-link {
-    font-size: 11px;
+.message-code-block {
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    margin: 4px 0;
+    color: #ffd166;
+}
+
+/* Interactive Translation Toggle Link */
+.translation-toggle-link {
+    font-size: 10px;
     font-weight: 700;
     cursor: pointer;
-    text-decoration: underline;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     background: none;
     border: none;
-    text-align: left;
     outline: none;
+    text-align: left;
+    margin-top: 2px;
+    display: inline-block;
+    transition: opacity var(--transition-speed);
 }
 
-.message-row.incoming .original-text-link { color: var(--accent-color); }
-.message-row.outgoing .original-text-link { color: #ffffff; }
+.translation-toggle-link:hover {
+    opacity: 0.8;
+}
 
-.original-collapsible-box {
-    margin-top: 6px;
+.message-row.incoming .translation-toggle-link {
+    color: var(--accent-color);
+}
+
+.message-row.outgoing .translation-toggle-link {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Collapsible Translation Segment */
+.translation-box {
+    margin-top: 4px;
     padding-top: 6px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     font-size: 13px;
-    font-style: italic;
-    opacity: 0.85;
+    opacity: 0.95;
+    line-height: 1.4;
+}
+
+.message-row.incoming .translation-box {
+    color: var(--text-secondary);
+}
+
+.message-row.outgoing .translation-box {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Bubble Metadata row (Time + State Checkmark) */
+.message-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: var(--font-time);
+    margin-top: 2px;
+    user-select: none;
+}
+
+.message-row.incoming .message-meta-row {
+    color: var(--text-secondary);
+}
+
+.message-row.outgoing .message-meta-row {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Detailed Message Status Indicators */
+.message-status-icon {
+    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-failed-indicator {
+    color: #e63946;
+    cursor: pointer;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
 }
 
 /* ========================================================
-   BOTTOM CHAT FOOTER & REVOLUTIONARY SWIPE-TO-SEND ROCKET
+   5. FLOATING DOCK DYNAMIC INPUT FOOTER (iOS/Instagram)
    ======================================================== */
 .chat-footer {
     height: var(--input-height-desktop);
@@ -299,8 +497,7 @@ body, html {
     left: 0;
     right: 0;
     width: 100%;
-    /* Transparent background with beautiful backdrop blur (prevent eye strain, very modern) */
-    background: rgba(15, 17, 21, 0.65) !important;
+    background: rgba(15, 17, 21, 0.75) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-top: 1px solid var(--border-color);
@@ -309,7 +506,7 @@ body, html {
     justify-content: center;
     padding: 0 16px;
     flex-shrink: 0;
-    z-index: 15;
+    z-index: 25;
 }
 
 .input-row {
@@ -320,7 +517,6 @@ body, html {
     gap: 12px;
 }
 
-/* Identity Bubble Button */
 .identity-badge {
     background-color: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-color);
@@ -338,7 +534,6 @@ body, html {
 .identity-avatar { font-size: 14px; }
 .identity-name { font-size: 11px; font-weight: 700; color: var(--text-primary); }
 
-/* Unified Input area covering text field + swipe channel */
 .footer-input-container {
     flex-grow: 1;
     display: flex;
@@ -346,26 +541,37 @@ body, html {
     background-color: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--input-radius); /* Strict 28px radius */
-    padding: 4px 6px 4px 18px; /* Padding for neat look */
+    padding: 4px 6px 4px 18px;
     gap: 8px;
+    transition: border-color var(--transition-speed);
 }
 
+.footer-input-container:focus-within {
+    border-color: var(--border-color-focus);
+}
+
+/* Responsive Auto-resizing Textarea (Supporting Shift+Enter) */
 .message-input {
     flex-grow: 1;
-    height: 40px;
+    height: 38px;
+    max-height: 100px;
     background: none;
     border: none;
     color: var(--text-primary);
     font-size: var(--font-input);
     outline: none;
+    resize: none; /* Disables manual resizing */
+    padding-top: 9px;
+    font-family: inherit;
+    line-height: 1.4;
 }
 
-/* 🚀 Swipe-to-Send Channel Area */
+/* Swipe-to-Send Channel Area */
 .swipe-send-channel {
     position: relative;
     width: 130px;
     height: 42px;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.35);
     border-radius: 21px;
     border: 1px solid rgba(255, 255, 255, 0.04);
     display: flex;
@@ -446,8 +652,49 @@ body, html {
 }
 
 /* ========================================================
-   FULL SCREEN BLAZING FIRE SCREEN FLASH OVERLAY (0.3s)
+   6. FLOATING HUD NOTIFICATIONS & FLOATING BUTTONS
    ======================================================== */
+
+/* Scroll-to-bottom / "New Messages" Alert Floating Dock */
+.new-messages-dock-btn {
+    position: fixed;
+    bottom: 96px; /* Sits perfectly above input bar */
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 20;
+    background-color: var(--accent-color);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(79, 140, 255, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
+    outline: none;
+}
+
+.new-messages-dock-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+}
+
+.new-messages-dock-btn:hover {
+    background-color: var(--accent-hover);
+}
+
+.new-messages-dock-btn:active {
+    transform: translateX(-50%) scale(0.96);
+}
+
+/* Full Screen Blazing Fire Overlay (Triggered on high-speed swipe) */
 .fire-screen-overlay {
     position: fixed;
     inset: 0;
@@ -475,7 +722,6 @@ body, html {
     50% { transform: translate(-2px, -4px); }
 }
 
-/* Climbing Fire Flames at bottom */
 .climbing-flames-canvas {
     width: 100%;
     height: 180px;
@@ -483,7 +729,7 @@ body, html {
 }
 
 /* ========================================================
-   LANGUAGE SELECTOR MODAL (Insta/Telegram Styled Popup)
+   7. LANGUAGE SELECTOR MODAL (Telegram/Whatsapp Styled Popup)
    ======================================================== */
 .modal-overlay {
     position: fixed;
@@ -505,15 +751,15 @@ body, html {
 }
 
 .modal-card {
-    background-color: #15181F;
+    background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
     max-height: 75vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     transform: scale(0.95);
     transition: transform var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -523,7 +769,7 @@ body, html {
 }
 
 .modal-header {
-    padding: 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -555,7 +801,7 @@ body, html {
 
 /* Modal Search input */
 .modal-search-box {
-    padding: 12px 16px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-header);
 }
@@ -598,10 +844,10 @@ body, html {
 .modal-body {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
 }
 
 .modal-sub-title {
@@ -645,6 +891,12 @@ body, html {
     background-color: rgba(79, 140, 255, 0.1);
 }
 
+/* Keyboard navigable active focus style on grid buttons */
+.lang-btn.focus-highlight {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -1px;
+}
+
 .lang-code {
     font-size: 10px;
     color: var(--accent-color);
@@ -681,14 +933,40 @@ body, html {
     border-color: var(--accent-color);
 }
 
+.ai-chip.focus-highlight {
+    outline: 2px solid var(--accent-color);
+}
+
+/* Skeleton Loading Shimmer effects */
+.skeleton-row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.skeleton-bubble {
+    width: 60%;
+    height: 60px;
+    background: linear-gradient(90deg, #1e222b 25%, #2a2e38 50%, #1e222b 75%);
+    background-size: 200% 100%;
+    border-radius: var(--bubble-radius);
+    animation: shimmer 1.5s infinite linear;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 /* ========================================================
-   RESPONSIVE LAYOUTS
+   8. RESPONSIVE MEDIA QUERIES (Desktop, Tablet, Mobile)
    ======================================================== */
 @media (max-width: 767px) {
     :root {
         --header-height-mobile: 56px;
         --input-height-mobile: 72px;
-        --font-chat: var(--font-chat-mobile);
+        --font-chat-desktop: var(--font-chat-mobile);
     }
     
     .chat-header {
@@ -703,5 +981,19 @@ body, html {
     
     .identity-badge {
         padding: 6px 10px;
+    }
+    
+    /* Strict mobile bubble maximum width constraint */
+    .message-row.incoming .message-bubble,
+    .message-row.outgoing .message-bubble {
+        max-width: 82%; /* Strict 82% mobile maximum width constraint */
+    }
+    
+    .lang-grid {
+        grid-template-columns: 1fr; /* Single column on mobile */
+    }
+    
+    .new-messages-dock-btn {
+        bottom: 88px;
     }
 }
