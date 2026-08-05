@@ -888,7 +888,7 @@ DOM.newMessagesDock.addEventListener("click", () => {
     scrollToBottom();
 });
 
-// Render individual message bubble incrementally
+// Render individual message card incrementally (YouTube-comment style for maximum readability)
 function renderSingleMessageBubble(msg, animate = false) {
     if (STATE.renderedMessageIds.has(msg.id)) {
         const bubble = document.getElementById(`msg-bubble-${msg.id}`);
@@ -897,60 +897,68 @@ function renderSingleMessageBubble(msg, animate = false) {
     }
 
     const isMe = msg.sender.includes(`User ${STATE.userNumberTag}`);
-    const row = document.createElement("div");
-    row.className = `message-row ${isMe ? 'outgoing' : 'incoming'}`;
+    const row = document.createElement("article");
+    row.className = `message-row comment-message-row ${isMe ? 'outgoing mine' : 'incoming'}`;
     row.id = `msg-row-${msg.id}`;
     
-    if (animate) {
-        row.classList.add("animate-in");
-    }
+    if (animate) row.classList.add("animate-in");
 
-    const formattedText = formatMessageText(msg.translated_text || msg.original_text || msg.text);
+    const formattedText = formatMessageText(msg.translated_text || msg.original_text || msg.text || "");
     const isOriginal = msg.original_lang === STATE.selectedLanguage;
-    
-    const bubbleStyle = isMe
-        ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
-        : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
+    const timeText = msg.isPending
+        ? `<span class="comment-pending"><i class="fa-regular fa-clock"></i> sending...</span>`
+        : `<span>${msg.timestamp && msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : (msg.timestamp || "now")}</span>`;
 
-    let metaString = "";
-    if (!isOriginal) {
-        metaString = `Translated from ${msg.original_lang_name}`;
-    } else {
-        metaString = `Original: ${msg.original_lang_name}`;
-    }
+    const langBadgeText = !isOriginal
+        ? `Translated from ${escapeHTML(msg.original_lang_name || msg.original_lang || "Unknown")}`
+        : `Original: ${escapeHTML(msg.original_lang_name || msg.original_lang || "Unknown")}`;
 
     const toggleBtnHtml = !isOriginal
-        ? `<button onclick="toggleSingleBubbleTranslation('${msg.id}')" id="btn-trans-toggle-${msg.id}" class="translation-toggle-link">Show Original</button>`
+        ? `<button type="button" onclick="toggleSingleBubbleTranslation('${msg.id}')" id="btn-trans-toggle-${msg.id}" class="translation-toggle-link comment-action-pill"><i class="fa-solid fa-language"></i> Show Original</button>`
         : '';
 
-    const statusHtml = msg.isPending 
-        ? `<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>`
-        : `<span>${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>`;
+    const likeState = getMessageReactionState(msg.id);
+    const likeActive = likeState === "like" ? "active" : "";
+    const dislikeActive = likeState === "dislike" ? "active" : "";
 
     row.innerHTML = `
-        <!-- Sender Name (ENLARGED, Font-ExtraBold) -->
-        ${!isMe ? `
-            <div class="message-header-row">
-                <span class="message-sender-avatar">${msg.avatar || "🦁"}</span>
-                <span class="message-sender-name">${msg.sender}</span>
-            </div>
-        ` : ''}
-        <div class="message-bubble-wrapper max-w-[80%] md:max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}" id="msg-bubble-${msg.id}">
-            <div class="${bubbleStyle} break-words w-full message-text-content">
-                <span id="text-body-${msg.id}">${formattedText}</span>
-                ${!isOriginal ? `
-                    <div id="box-translation-${msg.id}" class="translation-box hidden">
-                        Original: "${escapeHTML(msg.original_text || msg.text)}"
-                    </div>
-                ` : ''}
-            </div>
-            <div class="message-meta-row">
-                <span id="status-time-${msg.id}">${statusHtml}</span>
-                <span>•</span>
-                <span id="status-lang-${msg.id}">${metaString}</span>
-                ${toggleBtnHtml ? `<span>•</span> ${toggleBtnHtml}` : ''}
-                <span id="status-tick-${msg.id}" class="message-status-icon ml-1"></span>
-            </div>
+        <div class="comment-avatar-wrap" aria-hidden="true">
+            <div class="comment-avatar">${escapeHTML(msg.avatar || "🦁")}</div>
+        </div>
+
+        <div class="comment-card ${isMe ? 'comment-card-mine' : ''}" id="msg-bubble-${msg.id}">
+            <header class="comment-card-header">
+                <div class="comment-author-line">
+                    <span class="comment-author-name">${escapeHTML(msg.sender || "Anonymous")}</span>
+                    ${isMe ? `<span class="comment-you-badge">You</span>` : ''}
+                    <span class="comment-dot">•</span>
+                    <time class="comment-time" id="status-time-${msg.id}">${timeText}</time>
+                    <span id="status-tick-${msg.id}" class="message-status-icon comment-status-icon"></span>
+                </div>
+                <span class="comment-language-badge" id="status-lang-${msg.id}">${langBadgeText}</span>
+            </header>
+
+            <div class="comment-text message-text-content" id="text-body-${msg.id}">${formattedText}</div>
+
+            ${!isOriginal ? `
+                <div id="box-translation-${msg.id}" class="translation-box comment-original-box hidden">
+                    <div class="comment-original-label">Original message</div>
+                    <div class="comment-original-text">${escapeHTML(msg.original_text || msg.text || "")}</div>
+                </div>
+            ` : ''}
+
+            <footer class="comment-actions" aria-label="Message actions">
+                <button type="button" class="comment-action-btn ${likeActive}" onclick="reactToMessage('${msg.id}', 'like')" title="Like">
+                    <i class="fa-regular fa-thumbs-up"></i><span>Like</span>
+                </button>
+                <button type="button" class="comment-action-btn ${dislikeActive}" onclick="reactToMessage('${msg.id}', 'dislike')" title="Dislike">
+                    <i class="fa-regular fa-thumbs-down"></i><span>Dislike</span>
+                </button>
+                <button type="button" class="comment-action-btn" onclick="replyToMessage('${msg.id}')" title="Reply">
+                    <i class="fa-regular fa-comment-dots"></i><span>Reply</span>
+                </button>
+                ${toggleBtnHtml}
+            </footer>
         </div>
     `;
 
@@ -963,9 +971,42 @@ function renderSingleMessageBubble(msg, animate = false) {
     innerContainer.appendChild(row);
     STATE.renderedMessageIds.add(msg.id);
     
-    const wrapper = row.querySelector(".message-bubble-wrapper");
+    const wrapper = row.querySelector(".comment-card");
     updateMessageBubbleStatus(wrapper, msg);
 }
+
+function getMessageReactionState(msgId) {
+    try {
+        const map = JSON.parse(localStorage.getItem("message_reactions") || "{}");
+        return map[msgId] || "";
+    } catch (_) {
+        return "";
+    }
+}
+
+window.reactToMessage = function(msgId, reaction) {
+    const map = JSON.parse(localStorage.getItem("message_reactions") || "{}");
+    map[msgId] = map[msgId] === reaction ? "" : reaction;
+    if (!map[msgId]) delete map[msgId];
+    localStorage.setItem("message_reactions", JSON.stringify(map));
+
+    const row = document.getElementById(`msg-row-${msgId}`);
+    if (!row) return;
+    row.querySelectorAll(".comment-action-btn").forEach(btn => btn.classList.remove("active"));
+    const btns = row.querySelectorAll(".comment-action-btn");
+    if (map[msgId] === "like" && btns[0]) btns[0].classList.add("active");
+    if (map[msgId] === "dislike" && btns[1]) btns[1].classList.add("active");
+};
+
+window.replyToMessage = function(msgId) {
+    const msg = STATE.messagesData.find(m => m.id === msgId || m.clientMessageId === msgId);
+    if (!msg) return;
+    const name = (msg.sender || "User").replace(/^\S+\s*/, "").trim() || "User";
+    DOM.postText.value = `@${name} `;
+    DOM.postText.focus();
+    autoResizeInput();
+    checkSwipeGuide();
+};
 
 function updateMessageBubbleStatus(wrapper, msg) {
     const tickSpan = wrapper.querySelector('[id^="status-tick-"]');

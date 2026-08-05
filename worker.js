@@ -1,5 +1,5 @@
 /**
- * BhashaSetu Cloudflare Worker v3.1
+ * BhashaSetu Cloudflare Worker v3.1.3
  * Fixes broken live core: working languages API, working POST messages,
  * real WebSocket `/ws`, ACK flow, Durable Object room storage and translation fallback.
  */
@@ -27,7 +27,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: JSON_HEADERS });
 
     if (url.pathname === "/health") {
-      return Response.json({ ok: true, app: "BhashaSetu", version: "3.1", now: new Date().toISOString() }, { headers: JSON_HEADERS });
+      return Response.json({ ok: true, app: "BhashaSetu", version: "3.1.3", now: new Date().toISOString() }, { headers: JSON_HEADERS });
     }
 
     if (url.pathname === "/api/languages") {
@@ -90,9 +90,19 @@ export class ChatRoom {
     const after = Number(url.searchParams.get("after") || 0) || 0;
     const limit = Math.min(Number(url.searchParams.get("limit") || 150) || 150, 300);
     const messages = await this.readMessages();
-    const out = messages.filter(m => (m.sequenceNumber || 0) > after).slice(-limit).map(m => this.present(m, lang));
-    // Warm translations without blocking UI.
-    this.runLater(Promise.all(out.slice(-40).map(m => this.ensureTranslation(m.id, lang))));
+    const selected = messages.filter(m => (m.sequenceNumber || 0) > after).slice(-limit);
+
+    // IMPORTANT: language switch must actually return translated text, not only warm cache later.
+    // Translate missing selected messages now, with a hard timeout so UI never hangs forever.
+    await withTimeout(
+      this.ensureTranslationsForMessages(selected.map(m => m.id), lang),
+      6500
+    );
+
+    const fresh = await this.readMessages();
+    const freshById = new Map(fresh.map(m => [m.id, m]));
+    const out = selected.map(m => this.present(freshById.get(m.id) || m, lang));
+
     return Response.json({ messages: out, current_language: LANG_NAME[lang] || "English", room: ROOM_DEFAULT }, { headers: JSON_HEADERS });
   }
 
@@ -224,6 +234,51 @@ export class ChatRoom {
     };
   }
 
+  async ensureTranslationsForMessages(messageIds, targetLang) {
+    targetLang = safeLang(targetLang || "en");
+    const idSet = new Set(messageIds || []);
+    const messages = await this.readMessages();
+    const jobs = [];
+
+    for (const msg of messages) {
+      if (!idSet.has(msg.id)) continue;
+      msg.translations = msg.translations || {};
+      if (msg.translations[targetLang]) continue;
+
+      const source = msg.original_lang || "auto";
+      const original = msg.original_text || msg.text || "";
+      if (!original) continue;
+
+      if (source === targetLang) {
+        jobs.push({ msg, promise: Promise.resolve(original) });
+      } else {
+        jobs.push({ msg, promise: translateText(original, source, targetLang) });
+      }
+    }
+
+    if (!jobs.length) return;
+
+    const results = await Promise.allSettled(jobs.map(j => j.promise));
+    let changed = false;
+
+    results.forEach((result, index) => {
+      const job = jobs[index];
+      const original = job.msg.original_text || job.msg.text || "";
+      const translated = result.status === "fulfilled" && result.value ? result.value : original;
+      job.msg.translations = job.msg.translations || {};
+      job.msg.translations[targetLang] = translated;
+      changed = true;
+    });
+
+    if (changed) {
+      await this.saveMessages(messages);
+      for (const job of jobs) {
+        const translated = job.msg.translations && job.msg.translations[targetLang];
+        if (translated) this.broadcastTranslation(job.msg.id, targetLang, translated);
+      }
+    }
+  }
+
   async ensureTranslation(messageId, targetLang) {
     targetLang = safeLang(targetLang || "en");
     const messages = await this.readMessages();
@@ -298,17 +353,74 @@ function detectLanguage(text) {
 
 async function translateText(text, sourceLang, targetLang) {
   if (!text || sourceLang === targetLang) return text;
+
+  // Provider 1: Google public endpoint. Use sl=auto because lightweight local detection
+  // can mis-detect Hinglish/Roman Hindi and then Google may refuse bad source codes.
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2500);
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(sourceLang || "auto")}&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "BhashaSetu/3.1" } });
-    clearTimeout(timer);
-    if (res.ok) {
-      const data = await res.json();
-      const translated = Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || "").join("") : "";
-      if (translated && !translated.toLowerCase().includes("<html")) return translated;
-    }
+    const translated = await googleTranslate(text, "auto", targetLang, 3200);
+    if (isGoodTranslation(translated, text)) return translated;
   } catch (_) {}
+
+  // Provider 2: Retry with detected source language for scripts where auto struggles.
+  try {
+    const translated = await googleTranslate(text, sourceLang || "auto", targetLang, 3200);
+    if (isGoodTranslation(translated, text)) return translated;
+  } catch (_) {}
+
+  // Provider 3: MyMemory fallback. Not perfect, but better than silently failing.
+  try {
+    const translated = await myMemoryTranslate(text, sourceLang || "auto", targetLang, 3200);
+    if (isGoodTranslation(translated, text)) return translated;
+  } catch (_) {}
+
+  // Graceful degradation: never break chat if translator providers fail.
   return text;
+}
+
+async function googleTranslate(text, sourceLang, targetLang, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(sourceLang || "auto")}&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Mozilla/5.0 BhashaSetu/3.1.2" } });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || "").join("") : "";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function myMemoryTranslate(text, sourceLang, targetLang, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const src = sourceLang && sourceLang !== "auto" ? sourceLang : "auto";
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(src + "|" + targetLang)}`;
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "BhashaSetu/3.1.2" } });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data?.responseData?.translatedText || "";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isGoodTranslation(translated, original) {
+  if (!translated) return false;
+  const low = translated.toLowerCase();
+  if (low.includes("<html") || low.includes("error 500") || low.includes("that's an error") || low.includes("too many requests")) return false;
+  return true;
+}
+
+async function withTimeout(promise, timeoutMs) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise(resolve => { timer = setTimeout(() => resolve("timeout"), timeoutMs); })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }

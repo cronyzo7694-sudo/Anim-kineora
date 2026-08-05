@@ -997,3 +997,308 @@ body, html {
         bottom: 88px;
     }
 }
+
+/* ========================================================
+   YouTube Comment Style Message Cards — v3.2 readability fix
+   Every message is boxed, separated, and readable even in huge feeds.
+   ======================================================== */
+.chat-messages-inner {
+    max-width: 920px;
+    gap: 12px;
+    padding: 6px 8px 14px;
+}
+
+.comment-message-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+}
+
+.comment-message-row.outgoing,
+.comment-message-row.incoming {
+    align-items: flex-start;
+}
+
+.comment-avatar-wrap {
+    width: 44px;
+    display: flex;
+    justify-content: center;
+    padding-top: 3px;
+}
+
+.comment-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, rgba(79,140,255,0.22), rgba(255,255,255,0.06));
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.20);
+    font-size: 19px;
+    flex-shrink: 0;
+}
+
+.comment-card {
+    width: 100%;
+    min-width: 0;
+    background: rgba(23, 26, 33, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.085);
+    border-radius: 16px;
+    padding: 12px 14px 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    position: relative;
+    overflow: hidden;
+}
+
+.comment-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: rgba(79,140,255,0.45);
+    opacity: 0.75;
+}
+
+.comment-card-mine {
+    background: linear-gradient(180deg, rgba(20,38,72,0.98), rgba(18,27,45,0.98));
+    border-color: rgba(79,140,255,0.24);
+}
+
+.comment-card-mine::before {
+    background: linear-gradient(180deg, #4F8CFF, #7c5cff);
+    opacity: 1;
+}
+
+.comment-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.comment-author-line {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.comment-author-name {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    max-width: min(460px, 70vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.comment-you-badge {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(79,140,255,0.18);
+    border: 1px solid rgba(79,140,255,0.28);
+    color: #bcd2ff;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.comment-dot,
+.comment-time {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.comment-status-icon {
+    margin-left: 2px;
+    font-size: 11px;
+}
+
+.comment-language-badge {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.comment-text {
+    color: var(--text-primary);
+    font-size: 15.5px;
+    line-height: 1.62;
+    font-weight: 500;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    padding: 1px 0 2px;
+}
+
+.comment-text a {
+    color: #8db5ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.comment-original-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+}
+
+.comment-original-label {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+}
+
+.comment-original-text {
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.055);
+}
+
+.comment-action-btn,
+.comment-action-pill {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.comment-action-btn:hover,
+.comment-action-pill:hover {
+    background: rgba(255,255,255,0.075);
+    color: var(--text-primary);
+}
+
+.comment-action-btn:active,
+.comment-action-pill:active {
+    transform: scale(0.96);
+}
+
+.comment-action-btn.active {
+    color: #9ec0ff;
+    background: rgba(79,140,255,0.14);
+    border-color: rgba(79,140,255,0.24);
+}
+
+.comment-action-pill {
+    color: #9ec0ff;
+    margin: 0;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.comment-pending {
+    color: #facc15;
+}
+
+.status-failed-indicator {
+    color: #ff6b6b;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .chat-messages-inner {
+        gap: 10px;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .comment-message-row {
+        grid-template-columns: 36px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .comment-avatar-wrap {
+        width: 36px;
+    }
+
+    .comment-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+
+    .comment-card {
+        border-radius: 14px;
+        padding: 11px 11px 9px;
+    }
+
+    .comment-card-header {
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 7px;
+    }
+
+    .comment-language-badge {
+        white-space: normal;
+        width: fit-content;
+    }
+
+    .comment-author-name {
+        max-width: 58vw;
+    }
+
+    .comment-text {
+        font-size: 15px;
+        line-height: 1.58;
+    }
+
+    .comment-actions {
+        gap: 5px;
+    }
+
+    .comment-action-btn,
+    .comment-action-pill {
+        padding: 0 8px;
+        height: 29px;
+        font-size: 11.5px;
+    }
+}
