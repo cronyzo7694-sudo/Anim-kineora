@@ -316,7 +316,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
     <title>BhashaSetu — Global Chat Room</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for professional typography -->
+    <!-- Google Fonts for elite typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -364,7 +364,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 Syncing in <span id="seconds-left">5</span>s
             </span>
             <!-- Simple refresh -->
-            <button id="manual-refresh-btn" class="text-neutral-500 hover:text-neutral-800 p-1.5 rounded transition-colors" title="Force Sync Feed">
+            <button id="manual-refresh-btn" class="text-neutral-400 hover:text-neutral-800 p-1.5 rounded transition-colors" title="Force Sync Feed">
                 <i class="fa-solid fa-rotate-right text-[10px]"></i>
             </button>
             <!-- Minimal Language Button -->
@@ -480,6 +480,9 @@ const HTML_CONTENT = `<!DOCTYPE html>
         let refreshTimer = null;
         let timeLeft = 5;
 
+        // Dynamic Client-Side Translation Cache for SWR (0ms instant language switching!)
+        const clientTranslationCache = {};
+
         // Custom Unique Chat User Identity lists
         const avatars = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
         const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast", "Dhakad", "Chalaak", "Shanti", "Gabru", "Naughty", "Shana", "Smart", "Cool"];
@@ -503,7 +506,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
         const avatarPreview = document.getElementById("avatar-preview");
         const senderDisplay = document.getElementById("sender-display");
         const postText = document.getElementById("post-text");
-        const shuffleIdentityBtn = document.getElementById("shuffle-identity-btn");
+        const submitBtn = document.getElementById("submit-btn");
         
         const messagesContainer = document.getElementById("messages-container");
         const secondsLeftSpan = document.getElementById("seconds-left");
@@ -564,6 +567,8 @@ const HTML_CONTENT = `<!DOCTYPE html>
             localStorage.setItem("selectedLanguageName", name);
             
             currentLangText.textContent = name;
+            
+            // Trigger instant UI change via Client Cache (0ms), then revalidate in background!
             fetchMessages(true);
             closeLanguageModal();
         }
@@ -685,16 +690,33 @@ const HTML_CONTENT = `<!DOCTYPE html>
             if (e.target === langModal) closeLanguageModal();
         });
 
-        // Load messages
+        // Load messages with SWR (Stale-While-Revalidate) Client-side cache for 0ms transitions!
         async function fetchMessages(forceScroll = false) {
+            // Step 1: Render from local client cache immediately if it exists (0ms response time!)
+            if (clientTranslationCache[selectedLanguage]) {
+                messagesData = clientTranslationCache[selectedLanguage];
+                renderMessages();
+                if (forceScroll) {
+                    scrollToBottom();
+                }
+            }
+
+            // Step 2: Fetch fresh translations in the background
             try {
+                // Subtle pulse on language button to show active background load
+                openModalBtn.classList.add("animate-pulse");
+
                 const res = await fetch(\`/api/messages?lang=\${selectedLanguage}\`);
                 const data = await res.json();
                 
+                openModalBtn.classList.remove("animate-pulse");
+
                 const isNewMessageAdded = data.messages.length !== messagesData.length;
                 messagesData = data.messages;
                 
-                document.getElementById("open-lang-modal-btn").querySelector("span").textContent = data.current_language;
+                // Write into our client cache
+                clientTranslationCache[selectedLanguage] = messagesData;
+                
                 renderMessages();
                 
                 if (isNewMessageAdded || forceScroll) {
@@ -702,11 +724,14 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 }
             } catch (err) {
                 console.error("Failed to load feed:", err);
-                messagesContainer.innerHTML = \`
-                    <div class="h-full flex items-center justify-center text-xs text-red-500">
-                        Error syncing feed. Check backend server.
-                    </div>
-                \`;
+                openModalBtn.classList.remove("animate-pulse");
+                if (messagesData.length === 0) {
+                    messagesContainer.innerHTML = \`
+                        <div class="h-full flex items-center justify-center text-xs text-red-500">
+                            Error syncing feed. Check backend server.
+                        </div>
+                    \`;
+                }
             }
         }
 
@@ -716,7 +741,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     top: messagesContainer.scrollHeight,
                     behavior: 'smooth'
                 });
-            }, 100);
+            }, 50); // Fast scroll response
         }
 
         // Render clean premium chat bubbles with enlarged text (WhatsApp / Instagram Direct Messages style)
@@ -759,6 +784,11 @@ const HTML_CONTENT = `<!DOCTYPE html>
                     ? \`<button onclick="toggleOriginal('\${msg.id}')" id="btn-orig-\${msg.id}" class="text-[9px] text-[#0084ff] hover:underline font-bold transition-all">Show Original</button>\`
                     : '';
 
+                // Add subtle loading status indicators on pending optimistic messages
+                const statusHtml = msg.isPending 
+                    ? \`<span class="text-neutral-400 font-mono text-[9px] animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>\`
+                    : \`<span>\${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>\`;
+
                 bubbleRow.innerHTML = \`
                     <!-- Sender Name (ENLARGED to text-xs, Font-ExtraBold, and highly defined) -->
                     \${!isMe ? \`<span class="text-xs font-extrabold text-neutral-600 ml-1 flex items-center gap-1">\${msg.sender}</span>\` : ''}
@@ -771,7 +801,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
                         
                         <!-- Mini Bubble Footer -->
                         <div class="flex items-center gap-1.5 mt-1 px-1 text-[9px] text-neutral-500 font-medium">
-                            <span>\${msg.timestamp.split(" ")[1].substring(0, 5)}</span>
+                            \${statusHtml}
                             <span>•</span>
                             <span>\${metaString}</span>
                             \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
@@ -803,7 +833,7 @@ const HTML_CONTENT = `<!DOCTYPE html>
             }
         };
 
-        // Post trigger
+        // Post trigger with Optimistic UI updates (0ms send response time!)
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             
@@ -813,10 +843,30 @@ const HTML_CONTENT = `<!DOCTYPE html>
             
             if (!text) return;
             
-            const submitBtn = document.getElementById("submit-btn");
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = \`<i class="fa-solid fa-spinner animate-spin text-[9px]"></i>\`;
+            // 1. OPTIMISTIC UPDATE: Add the message to our UI instantly (0ms response!)
+            const tempMsgId = \`temp_\${Date.now()}\`;
+            const optimisticMsg = {
+                id: tempMsgId,
+                sender: sender,
+                avatar: avatar,
+                text: text,
+                original_text: text,
+                original_lang: selectedLanguage, // assume current
+                original_lang_name: selectedLanguageName,
+                translated_text: text, // render immediately
+                timestamp: "sending...",
+                isPending: true // custom status flag
+            };
             
+            // Push locally & render immediately
+            messagesData.push(optimisticMsg);
+            renderMessages();
+            scrollToBottom();
+            
+            // Empty the input bar immediately (0ms) to feel highly responsive
+            postText.value = "";
+            
+            // 2. Network POST request runs in background
             try {
                 const response = await fetch("/api/messages", {
                     method: "POST",
@@ -825,18 +875,37 @@ const HTML_CONTENT = `<!DOCTYPE html>
                 });
                 
                 if (response.ok) {
-                    postText.value = "";
-                    await fetchMessages(true);
+                    const serverMsg = await response.json();
+                    
+                    // Replace optimistic bubble with real server bubble safely
+                    const index = messagesData.findIndex(m => m.id === tempMsgId);
+                    if (index !== -1) {
+                        messagesData[index] = {
+                            id: serverMsg.id,
+                            sender: serverMsg.sender,
+                            avatar: serverMsg.avatar,
+                            original_text: serverMsg.text,
+                            original_lang: serverMsg.original_lang,
+                            original_lang_name: serverMsg.original_lang_name,
+                            translated_text: serverMsg.text,
+                            timestamp: serverMsg.timestamp
+                        };
+                    }
+                    
+                    // Write new message to client cache to keep it up-to-date
+                    clientTranslationCache[selectedLanguage] = messagesData;
+                    renderMessages();
                 } else {
-                    const err = await response.json();
-                    alert("Delivery failed: " + (err.detail || "Server error"));
+                    // Remove optimistic bubble if server failed
+                    messagesData = messagesData.filter(m => m.id !== tempMsgId);
+                    renderMessages();
+                    alert("Delivery failed");
                 }
             } catch (err) {
                 console.error("Deliver error:", err);
-                alert("Deliver error. Ensure connection.");
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = \`<i class="fa-solid fa-paper-plane text-[9px]"></i>\`;
+                // Remove optimistic bubble on network crash
+                messagesData = messagesData.filter(m => m.id !== tempMsgId);
+                renderMessages();
             }
         });
 
