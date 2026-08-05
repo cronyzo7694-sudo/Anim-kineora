@@ -10,5 +10,5 @@ name = "CHAT_ROOM"
 class_name = "ChatRoom"
 
 [[migrations]]
-tag = "v3_1_chatroom_core"
-new_classes = ["ChatRoom"]
+tag = "v3_1_chatroom_core_sqlite"
+new_sqlite_classes = ["ChatRoom"]
