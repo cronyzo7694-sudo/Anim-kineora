@@ -102,6 +102,18 @@ const DOM = {
     systemLangsGrid: document.getElementById("system-languages-grid"),
     allLangsGrid: document.getElementById("all-languages-grid"),
     currentLangText: document.getElementById("current-lang-text"),
+    openStatsModalBtn: document.getElementById("open-stats-modal-btn"),
+    closeStatsModalBtn: document.getElementById("close-stats-modal-btn"),
+    statsModal: document.getElementById("stats-modal"),
+    statsOnlinePill: document.getElementById("stats-online-pill"),
+    installAppBtn: document.getElementById("install-app-btn"),
+    statsCurrent: document.getElementById("stats-current"),
+    statsToday: document.getElementById("stats-today"),
+    statsMonth: document.getElementById("stats-month"),
+    statsYear: document.getElementById("stats-year"),
+    statsTotal: document.getElementById("stats-total"),
+    statsVisits: document.getElementById("stats-visits"),
+    statsUpdatedText: document.getElementById("stats-updated-text"),
     
     messageForm: document.getElementById("message-form"),
     postAvatar: document.getElementById("post-avatar"),
@@ -971,6 +983,9 @@ function renderSingleMessageBubble(msg, animate = false) {
                 <button type="button" class="comment-action-btn" onclick="replyToMessage('${msg.id}')" title="Reply">
                     <i class="fa-regular fa-comment-dots"></i><span>Reply</span>
                 </button>
+                <button type="button" class="comment-action-btn report-action-btn" onclick="reportMessage('${msg.id}')" title="Report abuse">
+                    <i class="fa-regular fa-flag"></i><span>Report</span>
+                </button>
                 ${toggleBtnHtml}
             </footer>
         </div>
@@ -1020,6 +1035,29 @@ window.replyToMessage = function(msgId) {
     DOM.postText.focus();
     autoResizeInput();
     checkSwipeGuide();
+};
+
+window.reportMessage = async function(msgId) {
+    const msg = STATE.messagesData.find(m => m.id === msgId || m.clientMessageId === msgId);
+    if (!msg) return;
+    const ok = confirm("Report this message for review?");
+    if (!ok) return;
+    try {
+        await fetch("/api/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                messageId: msg.id,
+                sender: msg.sender,
+                text: msg.original_text || msg.text || "",
+                reporterId: getVisitorId(),
+                reason: "user_report"
+            })
+        });
+        alert("Thanks. This message has been reported for review.");
+    } catch (err) {
+        alert("Report could not be sent right now. Please try again later.");
+    }
 };
 
 function updateMessageBubbleStatus(wrapper, msg) {
@@ -1255,6 +1293,9 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && DOM.langModal.classList.contains("active")) {
         closeLanguageModal();
     }
+    if (e.key === "Escape" && DOM.statsModal && DOM.statsModal.classList.contains("active")) {
+        closeStatsModal();
+    }
 });
 
 DOM.langModal.addEventListener("keydown", (e) => {
@@ -1289,10 +1330,133 @@ function scrollToBottom() {
 }
 
 // ========================================================
+
+
+// ========================================================
+// 📲 PWA INSTALL SUPPORT
+// ========================================================
+let deferredInstallPrompt = null;
+
+function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js").catch(err => {
+            console.warn("Service worker registration failed:", err);
+        });
+    });
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (DOM.installAppBtn) DOM.installAppBtn.classList.remove("hidden");
+});
+
+window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    if (DOM.installAppBtn) DOM.installAppBtn.classList.add("hidden");
+});
+
+async function installBatiyanApp() {
+    if (!deferredInstallPrompt) {
+        alert("Install option is available from your browser menu if this device supports PWA installation.");
+        return;
+    }
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice.catch(() => null);
+    deferredInstallPrompt = null;
+    if (DOM.installAppBtn) DOM.installAppBtn.classList.add("hidden");
+}
+
+if (DOM.installAppBtn) DOM.installAppBtn.addEventListener("click", installBatiyanApp);
+registerServiceWorker();
+
+// ========================================================
+// 📊 USAGE STATS MODAL + VISITOR COUNTER
+// ========================================================
+function getVisitorId() {
+    let id = localStorage.getItem("bhashasetu_visitor_id");
+    if (!id) {
+        id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `vis_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem("bhashasetu_visitor_id", id);
+    }
+    return id;
+}
+
+function formatCompactNumber(num) {
+    const n = Number(num || 0);
+    if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr`;
+    if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return n.toString();
+}
+
+async function registerVisitAndLoadStats() {
+    try {
+        const visitorId = getVisitorId();
+        const res = await fetch("/api/stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ visitorId })
+        });
+        if (res.ok) {
+            const stats = await res.json();
+            renderStats(stats);
+        }
+    } catch (err) {
+        console.warn("Stats register failed:", err);
+    }
+}
+
+async function fetchStats() {
+    try {
+        const res = await fetch("/api/stats");
+        if (!res.ok) throw new Error("Stats API failed");
+        const stats = await res.json();
+        renderStats(stats);
+    } catch (err) {
+        console.warn("Stats load failed:", err);
+        if (DOM.statsUpdatedText) DOM.statsUpdatedText.textContent = "Stats temporarily unavailable";
+    }
+}
+
+function renderStats(stats) {
+    if (!stats) return;
+    const current = stats.currentOnline || 0;
+    if (DOM.statsOnlinePill) DOM.statsOnlinePill.textContent = `${formatCompactNumber(current)} online`;
+    if (DOM.statsCurrent) DOM.statsCurrent.textContent = formatCompactNumber(current);
+    if (DOM.statsToday) DOM.statsToday.textContent = formatCompactNumber(stats.todayUsers);
+    if (DOM.statsMonth) DOM.statsMonth.textContent = formatCompactNumber(stats.monthUsers);
+    if (DOM.statsYear) DOM.statsYear.textContent = formatCompactNumber(stats.yearUsers);
+    if (DOM.statsTotal) DOM.statsTotal.textContent = formatCompactNumber(stats.totalUsers);
+    if (DOM.statsVisits) DOM.statsVisits.textContent = formatCompactNumber(stats.totalVisits);
+    if (DOM.statsUpdatedText) {
+        const updated = stats.updatedAt ? new Date(stats.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "now";
+        DOM.statsUpdatedText.textContent = `Updated ${updated} • Unique browser-based counts`;
+    }
+}
+
+function openStatsModal() {
+    if (!DOM.statsModal) return;
+    DOM.statsModal.classList.add("active");
+    fetchStats();
+}
+
+function closeStatsModal() {
+    if (!DOM.statsModal) return;
+    DOM.statsModal.classList.remove("active");
+    DOM.postText.focus();
+}
+
+if (DOM.openStatsModalBtn) DOM.openStatsModalBtn.addEventListener("click", openStatsModal);
+if (DOM.closeStatsModalBtn) DOM.closeStatsModalBtn.addEventListener("click", closeStatsModal);
+
 // 📦 BOOTSTRAP INITIALIZATION
 // ========================================================
 (async function init() {
     DOM.currentLangText.textContent = STATE.selectedLanguageName;
+    registerVisitAndLoadStats();
+    setInterval(fetchStats, 30000);
     
     // 1. Establish persistent real-time WebSocket connection gateway!
     RealtimeGateway.connect();

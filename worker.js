@@ -1,5 +1,5 @@
 /**
- * BhashaSetu Cloudflare Worker v3.1.3
+ * Batiyan Cloudflare Worker v3.5
  * Fixes broken live core: working languages API, working POST messages,
  * real WebSocket `/ws`, ACK flow, Durable Object room storage and translation fallback.
  */
@@ -27,7 +27,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: JSON_HEADERS });
 
     if (url.pathname === "/health") {
-      return Response.json({ ok: true, app: "BhashaSetu", version: "3.1.3", now: new Date().toISOString() }, { headers: JSON_HEADERS });
+      return Response.json({ ok: true, app: "Batiyan", version: "3.5", now: new Date().toISOString() }, { headers: JSON_HEADERS });
     }
 
     if (url.pathname === "/api/languages") {
@@ -39,7 +39,7 @@ export default {
       return Response.json({ suggestions: suggestLanguages(q) }, { headers: JSON_HEADERS });
     }
 
-    if (url.pathname === "/ws" || url.pathname === "/api/messages") {
+    if (url.pathname === "/ws" || url.pathname === "/api/messages" || url.pathname === "/api/stats" || url.pathname === "/api/report") {
       const room = safeRoom(url.searchParams.get("room") || ROOM_DEFAULT);
       const id = env.CHAT_ROOM.idFromName(room);
       return env.CHAT_ROOM.get(id).fetch(request);
@@ -63,6 +63,9 @@ export class ChatRoom {
     if (url.pathname === "/ws") return this.handleWebSocket(request, url);
     if (url.pathname === "/api/messages" && request.method === "GET") return this.getMessagesApi(url);
     if (url.pathname === "/api/messages" && request.method === "POST") return this.postMessageApi(request, url);
+    if (url.pathname === "/api/stats" && request.method === "GET") return this.getStatsApi();
+    if (url.pathname === "/api/stats" && request.method === "POST") return this.registerStatsVisit(request);
+    if (url.pathname === "/api/report" && request.method === "POST") return this.reportMessageApi(request);
     return new Response("Not Found", { status: 404 });
   }
 
@@ -83,6 +86,104 @@ export class ChatRoom {
   async saveMessages(messages) {
     const clipped = messages.length > MAX_MESSAGES ? messages.slice(-MAX_MESSAGES) : messages;
     await this.state.storage.put("messages", clipped);
+  }
+
+  getPeriodKeys(date = new Date()) {
+    const yyyy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(date.getUTCDate()).padStart(2, "0");
+    return {
+      day: `${yyyy}-${mm}-${dd}`,
+      month: `${yyyy}-${mm}`,
+      year: `${yyyy}`
+    };
+  }
+
+  async getStatsObject() {
+    const keys = this.getPeriodKeys();
+    const [totalUsers, totalVisits, todayUsers, monthUsers, yearUsers] = await Promise.all([
+      this.state.storage.get("stats:totalUsers"),
+      this.state.storage.get("stats:totalVisits"),
+      this.state.storage.get(`stats:day:${keys.day}`),
+      this.state.storage.get(`stats:month:${keys.month}`),
+      this.state.storage.get(`stats:year:${keys.year}`)
+    ]);
+    return {
+      currentOnline: this.sessions.size,
+      todayUsers: todayUsers || 0,
+      monthUsers: monthUsers || 0,
+      yearUsers: yearUsers || 0,
+      totalUsers: totalUsers || 0,
+      totalVisits: totalVisits || 0,
+      dayKey: keys.day,
+      monthKey: keys.month,
+      yearKey: keys.year,
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  async getStatsApi() {
+    return Response.json(await this.getStatsObject(), { headers: JSON_HEADERS });
+  }
+
+  async registerStatsVisit(request) {
+    let body = {};
+    try { body = await request.json(); } catch (_) {}
+    const rawVisitor = clean(body.visitorId || request.headers.get("CF-Connecting-IP") || crypto.randomUUID());
+    const visitorId = rawVisitor.slice(0, 120) || crypto.randomUUID();
+    const keys = this.getPeriodKeys();
+
+    await this.incrementCounter("stats:totalVisits", 1);
+
+    const allKey = `stats:seen:all:${visitorId}`;
+    const dayKey = `stats:seen:day:${keys.day}:${visitorId}`;
+    const monthKey = `stats:seen:month:${keys.month}:${visitorId}`;
+    const yearKey = `stats:seen:year:${keys.year}:${visitorId}`;
+
+    if (!(await this.state.storage.get(allKey))) {
+      await this.state.storage.put(allKey, true);
+      await this.incrementCounter("stats:totalUsers", 1);
+    }
+    if (!(await this.state.storage.get(dayKey))) {
+      await this.state.storage.put(dayKey, true);
+      await this.incrementCounter(`stats:day:${keys.day}`, 1);
+    }
+    if (!(await this.state.storage.get(monthKey))) {
+      await this.state.storage.put(monthKey, true);
+      await this.incrementCounter(`stats:month:${keys.month}`, 1);
+    }
+    if (!(await this.state.storage.get(yearKey))) {
+      await this.state.storage.put(yearKey, true);
+      await this.incrementCounter(`stats:year:${keys.year}`, 1);
+    }
+
+    return Response.json(await this.getStatsObject(), { headers: JSON_HEADERS });
+  }
+
+  async incrementCounter(key, by = 1) {
+    const current = (await this.state.storage.get(key)) || 0;
+    const next = current + by;
+    await this.state.storage.put(key, next);
+    return next;
+  }
+
+  async reportMessageApi(request) {
+    let body = {};
+    try { body = await request.json(); } catch (_) {}
+    const report = {
+      id: crypto.randomUUID(),
+      messageId: clean(body.messageId || "").slice(0, 140),
+      sender: clean(body.sender || "").slice(0, 120),
+      text: clean(body.text || "").slice(0, 1200),
+      reporterId: clean(body.reporterId || "anonymous").slice(0, 140),
+      reason: clean(body.reason || "user_report").slice(0, 80),
+      createdAt: new Date().toISOString()
+    };
+    const reports = (await this.state.storage.get("reports")) || [];
+    reports.push(report);
+    await this.state.storage.put("reports", reports.slice(-500));
+    await this.incrementCounter("stats:reports", 1);
+    return Response.json({ ok: true, reportId: report.id }, { headers: JSON_HEADERS });
   }
 
   async getMessagesApi(url) {
@@ -382,7 +483,7 @@ async function googleTranslate(text, sourceLang, targetLang, timeoutMs) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${encodeURIComponent(sourceLang || "auto")}&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Mozilla/5.0 BhashaSetu/3.1.2" } });
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Mozilla/5.0 Batiyan/3.5" } });
     if (!res.ok) return "";
     const data = await res.json();
     return Array.isArray(data?.[0]) ? data[0].map(x => x?.[0] || "").join("") : "";
@@ -397,7 +498,7 @@ async function myMemoryTranslate(text, sourceLang, targetLang, timeoutMs) {
   try {
     const src = sourceLang && sourceLang !== "auto" ? sourceLang : "auto";
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${encodeURIComponent(src + "|" + targetLang)}`;
-    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "BhashaSetu/3.1.2" } });
+    const res = await fetch(url, { signal: controller.signal, headers: { "user-agent": "Batiyan/3.5" } });
     if (!res.ok) return "";
     const data = await res.json();
     return data?.responseData?.translatedText || "";

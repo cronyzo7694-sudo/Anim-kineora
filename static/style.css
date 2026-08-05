@@ -1497,3 +1497,129 @@ body, html {
         font-size: 10px !important;
     }
 }
+
+/* ========================================================
+   v3.4 Usage Stats Button + Modal
+   ======================================================== */
+.stats-header-btn {
+    gap: 7px;
+    min-width: auto;
+}
+
+#stats-online-pill {
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.stats-modal-card {
+    max-width: 440px;
+}
+
+.stats-modal-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 18px;
+}
+
+.stats-card {
+    min-height: 82px;
+    border-radius: 16px;
+    padding: 13px 14px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.075);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+}
+
+.stats-card-wide {
+    grid-column: span 1;
+}
+
+.stats-label {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.045em;
+}
+
+.stats-card strong {
+    color: var(--text-primary);
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+.stats-card:first-child {
+    background: linear-gradient(145deg, rgba(79,140,255,0.18), rgba(255,255,255,0.045));
+    border-color: rgba(79,140,255,0.26);
+}
+
+.stats-note {
+    padding: 0 18px 18px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+    .stats-header-btn span {
+        display: inline !important;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .stats-card {
+        min-height: 72px;
+        padding: 10px;
+        border-radius: 13px;
+    }
+
+    .stats-label {
+        font-size: 10px;
+    }
+
+    .stats-card strong {
+        font-size: 22px;
+    }
+
+    .stats-note {
+        padding: 0 14px 14px;
+    }
+}
+
+/* v3.5 PWA install + store safety report action */
+.install-app-btn {
+    color: #9ec0ff;
+}
+
+.report-action-btn:hover {
+    color: #ffb4b4 !important;
+    background: rgba(255, 91, 91, 0.10) !important;
+}
+
+/* v3.6 Batiyan brand mark */
+.header-avatar {
+    overflow: hidden;
+    background: transparent !important;
+}
+
+.header-logo-mark {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: inherit;
+}

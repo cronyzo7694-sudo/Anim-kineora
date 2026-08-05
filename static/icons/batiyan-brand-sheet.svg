@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" fill="none" role="img" aria-label="Batiyan brand sheet">
+  <title>Batiyan — Brand Sheet</title>
+  <rect width="1200" height="900" fill="#FFFFFF"/>
+  <g font-family="ui-sans-serif, system-ui">
+    <text x="60" y="70" font-size="34" font-weight="700" fill="#0F1115" letter-spacing="-0.5">Batiyan</text>
+    <text x="60" y="98" font-size="14" fill="#6B7280">Brand Identity · Mark adapted for universal real-time translated chat</text>
+    <line x1="60" y1="120" x2="1140" y2="120" stroke="#E5E7EB"/>
+    <text x="60" y="160" font-size="12" font-weight="700" fill="#4F8CFF" letter-spacing="2">01 · PRIMARY MARK</text>
+  </g>
+  <g transform="translate(60 180) scale(2.5)">
+    <path d="M16 60C16 32 50 32 60 60 70 32 104 32 104 60" stroke="#4F8CFF" stroke-width="11" stroke-linecap="round"/>
+    <path d="M104 60C104 88 70 88 60 60 50 88 16 88 16 60M96 76L102 86 90 80" stroke="#0F1115" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="60" r="4" fill="#4F8CFF"/>
+  </g>
+  <rect x="430" y="180" width="200" height="200" rx="42" fill="#4F8CFF"/>
+  <g transform="translate(430 180) scale(1.667)">
+    <path d="M16 60C16 32 50 32 60 60 70 32 104 32 104 60" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+    <path d="M104 60C104 88 70 88 60 60 50 88 16 88 16 60M96 76L102 86 90 80" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="60" r="4" fill="#FFFFFF"/>
+  </g>
+  <rect x="650" y="180" width="200" height="200" rx="42" fill="#0F1115"/>
+  <g transform="translate(650 180) scale(1.667)">
+    <path d="M16 60C16 32 50 32 60 60 70 32 104 32 104 60" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+    <path d="M104 60C104 88 70 88 60 60 50 88 16 88 16 60M96 76L102 86 90 80" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="60" r="4" fill="#FFFFFF"/>
+  </g>
+  <g font-family="ui-sans-serif, system-ui">
+    <text x="60" y="470" font-size="12" font-weight="700" fill="#4F8CFF" letter-spacing="2">02 · APP ICON</text>
+  </g>
+  <rect x="60" y="500" width="180" height="180" rx="40" fill="#4F8CFF"/>
+  <g transform="translate(60 500) scale(1.5)">
+    <path d="M16 60C16 32 50 32 60 60 70 32 104 32 104 60" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+    <path d="M104 60C104 88 70 88 60 60 50 88 16 88 16 60M96 76L102 86 90 80" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="60" cy="60" r="4" fill="#FFFFFF"/>
+  </g>
+  <g font-family="ui-sans-serif, system-ui">
+    <text x="300" y="535" font-size="24" font-weight="800" fill="#0F1115">Batiyan</text>
+    <text x="300" y="565" font-size="14" fill="#6B7280">Universal multilingual chat</text>
+    <text x="300" y="595" font-size="13" fill="#6B7280">Primary #4F8CFF · Dark #0F1115 · White #FFFFFF</text>
+  </g>
+</svg>

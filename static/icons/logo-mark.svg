@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Batiyan logo mark">
+  <rect width="120" height="120" rx="26" fill="#4F8CFF"/>
+  <path d="M16 60C16 32 50 32 60 60 70 32 104 32 104 60" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round"/>
+  <path d="M104 60C104 88 70 88 60 60 50 88 16 88 16 60M96 76L102 86 90 80" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="60" cy="60" r="4" fill="#FFFFFF"/>
+</svg>

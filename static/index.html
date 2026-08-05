@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BhashaSetu — Premium Universal Chat Room</title>
+    <meta name="theme-color" content="#0F1115">
+    <meta name="description" content="Batiyan is a universal multilingual real-time chat app with instant translation.">
+    <meta name="application-name" content="Batiyan">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Batiyan">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icons/logo-mark.svg" type="image/svg+xml">
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>Batiyan — Universal Chat</title>
     <!-- Google Fonts for Inter typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +21,7 @@
     <!-- FontAwesome for neat icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Linked Custom Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=3.3">
+    <link rel="stylesheet" href="style.css?v=3.6">
 </head>
 <body>
 
@@ -38,9 +48,9 @@
             <!-- Chat Header -->
             <header class="chat-header" role="banner">
                 <div class="header-left">
-                    <div class="header-avatar" aria-hidden="true">🌐</div>
+                    <div class="header-avatar" aria-hidden="true"><img src="/icons/logo-mark.svg" alt="" class="header-logo-mark"></div>
                     <div class="header-details">
-                        <h2 class="header-title">BhashaSetu Global Chat</h2>
+                        <h2 class="header-title">Batiyan Global Chat</h2>
                         <div class="header-subtitle-row">
                             <!-- Connection Status Dot Indicator (Quiet, Non-blinking) -->
                             <span id="status-indicator-dot" class="status-dot connected" aria-hidden="true"></span>
@@ -51,6 +61,15 @@
 
                 <!-- Header Actions Panel -->
                 <div class="header-actions">
+                    <!-- Usage Stats -->
+                    <button id="open-stats-modal-btn" class="header-btn stats-header-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Show usage statistics" title="Usage Stats">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <span id="stats-online-pill">0 online</span>
+                    </button>
+                    <!-- Install App -->
+                    <button id="install-app-btn" class="header-icon-btn install-app-btn hidden" aria-label="Install Batiyan App" title="Install App">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
                     <!-- Manual Sync -->
                     <button id="manual-refresh-btn" class="header-icon-btn" aria-label="Sync Chat Feed" title="Sync Feed">
                         <i class="fa-solid fa-rotate-right"></i>
@@ -176,6 +195,6 @@
     </div>
 
     <!-- Linked JS App Logic with Cache Buster -->
-    <script src="app.js?v=3.3"></script>
+    <script src="app.js?v=3.6"></script>
 </body>
 </html>
