@@ -1302,3 +1302,198 @@ body, html {
         font-size: 11.5px;
     }
 }
+
+/* ========================================================
+   v3.3 Language modal fix + compact message cards
+   ======================================================== */
+.hidden {
+    display: none !important;
+}
+
+.lang-grid:empty::after {
+    content: "No languages found";
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 10px 2px;
+}
+
+.modal-body {
+    max-height: min(70vh, 620px);
+}
+
+.lang-btn {
+    min-height: 38px;
+    padding: 8px 10px;
+}
+
+/* Compact YouTube-comment style cards: more messages visible, still clean */
+.chat-messages-inner {
+    max-width: 900px;
+    gap: 7px !important;
+    padding: 4px 6px 10px !important;
+}
+
+.comment-message-row {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    gap: 8px !important;
+}
+
+.comment-avatar-wrap {
+    width: 34px !important;
+    padding-top: 2px !important;
+}
+
+.comment-avatar {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 15px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.16) !important;
+}
+
+.comment-card {
+    border-radius: 12px !important;
+    padding: 8px 10px 7px !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,0.14) !important;
+}
+
+.comment-card::before {
+    width: 2px !important;
+}
+
+.comment-card-header {
+    margin-bottom: 4px !important;
+    gap: 7px !important;
+    align-items: center !important;
+}
+
+.comment-author-line {
+    gap: 4px !important;
+    font-size: 11px !important;
+}
+
+.comment-author-name {
+    font-size: 12px !important;
+    font-weight: 800 !important;
+}
+
+.comment-you-badge {
+    padding: 1px 5px !important;
+    font-size: 9px !important;
+}
+
+.comment-dot,
+.comment-time,
+.comment-status-icon {
+    font-size: 10.5px !important;
+}
+
+.comment-language-badge {
+    padding: 2px 6px !important;
+    font-size: 10px !important;
+    max-width: 42%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comment-text {
+    font-size: 14px !important;
+    line-height: 1.42 !important;
+    padding: 0 !important;
+}
+
+.comment-original-box {
+    margin-top: 6px !important;
+    padding: 6px 8px !important;
+    border-radius: 9px !important;
+    line-height: 1.35 !important;
+}
+
+.comment-original-label {
+    display: inline !important;
+    margin: 0 5px 0 0 !important;
+    color: #9ec0ff !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+.comment-original-text {
+    display: inline !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+}
+
+.comment-actions {
+    margin-top: 6px !important;
+    padding-top: 5px !important;
+    gap: 5px !important;
+}
+
+.comment-action-btn,
+.comment-action-pill {
+    height: 24px !important;
+    padding: 0 7px !important;
+    font-size: 10.5px !important;
+    gap: 4px !important;
+}
+
+.comment-action-btn i,
+.comment-action-pill i {
+    font-size: 11px !important;
+}
+
+@media (max-width: 640px) {
+    .comment-message-row {
+        grid-template-columns: 30px minmax(0, 1fr) !important;
+        gap: 6px !important;
+    }
+
+    .comment-avatar-wrap {
+        width: 30px !important;
+    }
+
+    .comment-avatar {
+        width: 27px !important;
+        height: 27px !important;
+        font-size: 14px !important;
+    }
+
+    .comment-card {
+        padding: 7px 8px 6px !important;
+        border-radius: 11px !important;
+    }
+
+    .comment-card-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        margin-bottom: 4px !important;
+    }
+
+    .comment-language-badge {
+        max-width: 36%;
+        white-space: nowrap !important;
+        font-size: 9.5px !important;
+    }
+
+    .comment-author-name {
+        max-width: 40vw !important;
+    }
+
+    .comment-text {
+        font-size: 13.5px !important;
+        line-height: 1.38 !important;
+    }
+
+    .comment-actions {
+        margin-top: 5px !important;
+        padding-top: 4px !important;
+    }
+
+    .comment-action-btn,
+    .comment-action-pill {
+        height: 23px !important;
+        padding: 0 6px !important;
+        font-size: 10px !important;
+    }
+}

@@ -74,6 +74,20 @@ const STATE = {
 };
 
 // DOM Elements Registry
+function getLangName(code, fallback = "") {
+    const found = STATE.languages.find(l => l.code === code);
+    return found ? found.name : (fallback || code || "Language");
+}
+
+function normalizeSelectedLanguage() {
+    if (!STATE.selectedLanguage || STATE.selectedLanguage === "auto") {
+        STATE.selectedLanguage = "en";
+        STATE.selectedLanguageName = "English";
+        localStorage.setItem("selectedLanguageCode", "en");
+        localStorage.setItem("selectedLanguageName", "English");
+    }
+}
+
 const DOM = {
     appContainer: document.getElementById("app-container"),
     openModalBtn: document.getElementById("open-lang-modal-btn"),
@@ -942,8 +956,8 @@ function renderSingleMessageBubble(msg, animate = false) {
 
             ${!isOriginal ? `
                 <div id="box-translation-${msg.id}" class="translation-box comment-original-box hidden">
-                    <div class="comment-original-label">Original message</div>
-                    <div class="comment-original-text">${escapeHTML(msg.original_text || msg.text || "")}</div>
+                    <span class="comment-original-label">Original message:</span>
+                    <span class="comment-original-text">${escapeHTML(msg.original_text || msg.text || "")}</span>
                 </div>
             ` : ''}
 
@@ -1028,10 +1042,10 @@ window.toggleSingleBubbleTranslation = function(msgId) {
 
     if (box.classList.contains("hidden")) {
         box.classList.remove("hidden");
-        btn.textContent = "Hide Original";
+        btn.innerHTML = `<i class="fa-solid fa-language"></i> Hide Original`;
     } else {
         box.classList.add("hidden");
-        btn.textContent = "Show Original";
+        btn.innerHTML = `<i class="fa-solid fa-language"></i> Show Original`;
     }
     if (STATE.isUserAtBottom) scrollToBottom();
 };
@@ -1064,7 +1078,9 @@ async function fetchLanguages() {
     try {
         const res = await fetch("/api/languages");
         const data = await res.json();
-        STATE.languages = data.languages;
+        STATE.languages = Array.isArray(data.languages) ? data.languages : [];
+        normalizeSelectedLanguage();
+        DOM.currentLangText.textContent = STATE.selectedLanguageName || getLangName(STATE.selectedLanguage, "English");
         renderLanguages();
     } catch (err) {
         console.error("Languages load error:", err);
@@ -1081,7 +1097,7 @@ function renderLanguages(filter = "") {
     let matchCount = 0;
 
     const deviceLangCode = (navigator.language || "en").split("-")[0];
-    const deviceLangName = LANG_CODE_TO_NAME[deviceLangCode] || "Device Language";
+    const deviceLangName = getLangName(deviceLangCode, "Device Language");
     
     // Auto Detect
     const autoBtn = document.createElement("button");
@@ -1103,7 +1119,7 @@ function renderLanguages(filter = "") {
     if (STATE.recentLanguages.length > 0 && !cleanFilter) {
         DOM.recentLangsSection.classList.remove("hidden");
         STATE.recentLanguages.forEach(code => {
-            const name = LANG_CODE_TO_NAME[code];
+            const name = getLangName(code, "");
             if (name) {
                 const btn = document.createElement("button");
                 btn.type = "button";
@@ -1215,12 +1231,16 @@ function selectLanguage(code, name) {
     closeLanguageModal();
 }
 
-function openLanguageModal() {
+async function openLanguageModal() {
     DOM.langModal.classList.add("active");
     DOM.langSearchInput.value = "";
-    renderLanguages("");
+    if (!STATE.languages || STATE.languages.length === 0) {
+        await fetchLanguages();
+    } else {
+        renderLanguages("");
+    }
     DOM.aiSuggestionBox.classList.add("hidden");
-    DOM.langSearchInput.focus();
+    setTimeout(() => DOM.langSearchInput.focus(), 40);
 }
 
 function closeLanguageModal() {
