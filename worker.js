@@ -1,5 +1,5 @@
 /**
- * Batiyan Cloudflare Worker v3.5
+ * Batiyan Cloudflare Worker v3.7
  * Fixes broken live core: working languages API, working POST messages,
  * real WebSocket `/ws`, ACK flow, Durable Object room storage and translation fallback.
  */
@@ -27,7 +27,7 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { headers: JSON_HEADERS });
 
     if (url.pathname === "/health") {
-      return Response.json({ ok: true, app: "Batiyan", version: "3.5", now: new Date().toISOString() }, { headers: JSON_HEADERS });
+      return Response.json({ ok: true, app: "Batiyan", version: "3.7", now: new Date().toISOString() }, { headers: JSON_HEADERS });
     }
 
     if (url.pathname === "/api/languages") {
@@ -310,10 +310,15 @@ export class ChatRoom {
     await this.state.storage.put(`client:${clientMessageId}`, msg);
 
     if (ws) safeSend(ws, { type: "ACK", clientMessageId, id: msg.id, sequenceNumber: msg.sequenceNumber, timestamp: msg.timestamp });
-    this.broadcast({ type: "NEW_MESSAGE", message: this.present(msg, preferredLang) });
+
+    // Send the new message to every socket in that socket's selected language.
+    // If translation is not cached yet, original text is shown immediately and patched by TRANSLATION_UPDATED.
+    this.broadcastMessageForEachLanguage(msg);
 
     const targets = this.activeLanguages(preferredLang);
-    this.runLater(Promise.all(targets.map(lang => this.ensureTranslation(msg.id, lang))));
+    // Translate all active target languages in one storage-safe batch and broadcast patches.
+    this.runLater(this.ensureTranslationsForMessageTargets(msg.id, targets));
+
     return { status: 200, body: this.present(msg, preferredLang) };
   }
 
@@ -333,6 +338,61 @@ export class ChatRoom {
       translated_text: translated,
       timestamp: msg.timestamp
     };
+  }
+
+  broadcastMessageForEachLanguage(msg) {
+    for (const ws of [...this.sessions]) {
+      const lang = safeLang(ws.lang || "en");
+      safeSend(ws, { type: "NEW_MESSAGE", message: this.present(msg, lang) });
+    }
+  }
+
+  async ensureTranslationsForMessageTargets(messageId, targetLangs) {
+    const messages = await this.readMessages();
+    const idx = messages.findIndex(m => m.id === messageId);
+    if (idx < 0) return;
+
+    const msg = messages[idx];
+    msg.translations = msg.translations || {};
+    const original = msg.original_text || msg.text || "";
+    const source = msg.original_lang || "auto";
+    const targets = [...new Set((targetLangs || []).map(safeLang))].filter(Boolean).slice(0, 20);
+
+    const jobs = [];
+    for (const target of targets) {
+      if (msg.translations[target]) continue;
+      if (target === source) jobs.push({ target, promise: Promise.resolve(original) });
+      else jobs.push({ target, promise: translateText(original, source, target) });
+    }
+    if (!jobs.length) {
+      // If cache already exists, still patch online clients so they don't need reload.
+      for (const target of targets) {
+        if (msg.translations[target]) this.broadcastTranslation(msg.id, target, msg.translations[target]);
+      }
+      return;
+    }
+
+    const results = await Promise.allSettled(jobs.map(j => j.promise));
+
+    // Re-read fresh storage before saving, so we merge with any other updates safely.
+    const freshMessages = await this.readMessages();
+    const freshIdx = freshMessages.findIndex(m => m.id === messageId);
+    if (freshIdx < 0) return;
+    const freshMsg = freshMessages[freshIdx];
+    freshMsg.translations = freshMsg.translations || {};
+
+    results.forEach((result, i) => {
+      const target = jobs[i].target;
+      const translated = result.status === "fulfilled" && result.value ? result.value : original;
+      freshMsg.translations[target] = translated;
+    });
+
+    freshMessages[freshIdx] = freshMsg;
+    await this.saveMessages(freshMessages);
+
+    for (const target of targets) {
+      if (freshMsg.translations[target]) this.broadcastTranslation(freshMsg.id, target, freshMsg.translations[target]);
+    }
   }
 
   async ensureTranslationsForMessages(messageIds, targetLang) {
@@ -387,7 +447,10 @@ export class ChatRoom {
     if (index < 0) return;
     const msg = messages[index];
     msg.translations = msg.translations || {};
-    if (msg.translations[targetLang]) return;
+    if (msg.translations[targetLang]) {
+      this.broadcastTranslation(msg.id, targetLang, msg.translations[targetLang]);
+      return;
+    }
     const source = msg.original_lang || "auto";
     if (source === targetLang) msg.translations[targetLang] = msg.original_text || msg.text;
     else msg.translations[targetLang] = await translateText(msg.original_text || msg.text, source, targetLang);

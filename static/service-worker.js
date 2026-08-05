@@ -1,9 +1,9 @@
-const CACHE_NAME = 'batiyan-shell-v3.6';
+const CACHE_NAME = 'batiyan-shell-v3.8';
 const APP_SHELL = [
   '/',
   '/index.html',
-  '/style.css?v=3.6',
-  '/app.js?v=3.6',
+  '/style.css?v=3.8',
+  '/app.js?v=3.8',
   '/chat-pattern.svg',
   '/manifest.webmanifest',
   '/icons/icon-192.png',

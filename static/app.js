@@ -122,6 +122,7 @@ const DOM = {
     senderDisplay: document.getElementById("sender-display"),
     postText: document.getElementById("post-text"),
     shuffleIdentityBtn: document.getElementById("shuffle-identity-btn"),
+    identityToggleBtn: document.getElementById("identity-toggle-btn"),
     
     messagesContainer: document.getElementById("messages-container"),
     manualRefreshBtn: document.getElementById("manual-refresh-btn"),
@@ -159,6 +160,20 @@ DOM.shuffleIdentityBtn.addEventListener("click", () => {
     DOM.shuffleIdentityBtn.classList.add("scale-95");
     setTimeout(() => DOM.shuffleIdentityBtn.classList.remove("scale-95"), 100);
 });
+
+function setIdentityExpanded(expanded) {
+    document.body.classList.toggle("identity-expanded", expanded);
+    if (DOM.identityToggleBtn) {
+        DOM.identityToggleBtn.textContent = expanded ? "Hide" : "Show";
+        DOM.identityToggleBtn.setAttribute("aria-label", expanded ? "Hide nickname" : "Show nickname");
+    }
+}
+
+if (DOM.identityToggleBtn) {
+    DOM.identityToggleBtn.addEventListener("click", () => {
+        setIdentityExpanded(!document.body.classList.contains("identity-expanded"));
+    });
+}
 
 // ========================================================
 // 🔊 REAL-TIME SOUND SYNTHESIZER
@@ -549,6 +564,17 @@ class RealtimeConnectionManager {
             if (!exists) {
                 STATE.messagesData.push(msg);
                 renderSingleMessageBubble(msg, true);
+
+                // If the message arrived before translation patch, silently refresh once.
+                // This avoids manual reload if a TRANSLATION_UPDATED event is missed.
+                if (msg.original_lang !== STATE.selectedLanguage && (msg.translated_text === msg.original_text || msg.translated_text === msg.text)) {
+                    setTimeout(() => {
+                        const current = STATE.messagesData.find(m => m.id === msg.id);
+                        if (current && current.original_lang !== STATE.selectedLanguage && (current.translated_text === current.original_text || current.translated_text === current.text)) {
+                            fetchMessages(false);
+                        }
+                    }, 1100);
+                }
                 
                 if (!STATE.isUserAtBottom) {
                     STATE.unreadCount++;
@@ -594,7 +620,7 @@ class RealtimeConnectionManager {
             const targetLang = packet.targetLang;
             const translatedText = packet.translatedText;
 
-            const idx = STATE.messagesData.findIndex(m => m.id === msgId);
+            const idx = STATE.messagesData.findIndex(m => m.id === msgId || m.clientMessageId === msgId);
             if (idx !== -1) {
                 if (targetLang === STATE.selectedLanguage) {
                     STATE.messagesData[idx].translated_text = translatedText;
@@ -681,6 +707,16 @@ async function fetchMessages(forceScroll = false) {
                 
                 if (!STATE.isUserAtBottom) {
                     STATE.unreadCount++;
+                }
+            } else {
+                const idx = STATE.messagesData.findIndex(m => m.id === newMsg.id || (m.clientMessageId && m.clientMessageId === newMsg.clientMessageId));
+                if (idx !== -1) {
+                    const oldText = STATE.messagesData[idx].translated_text;
+                    STATE.messagesData[idx] = { ...STATE.messagesData[idx], ...newMsg };
+                    if (newMsg.translated_text && newMsg.translated_text !== oldText) {
+                        const textSpan = document.getElementById(`text-body-${newMsg.id}`);
+                        if (textSpan) textSpan.innerHTML = formatMessageText(newMsg.translated_text);
+                    }
                 }
             }
         });
