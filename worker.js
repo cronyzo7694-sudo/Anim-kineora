@@ -533,8 +533,8 @@ Highly polished, single-feed layout with immersive animations
     /* Sizing & Dimensions */
     --header-height-desktop: 64px;
     --header-height-mobile: 56px;
-    --input-height-desktop: 72px;
-    --input-height-mobile: 68px;
+    --input-height-desktop: 76px;
+    --input-height-mobile: 72px;
     
     /* Radii */
     --border-radius: 12px;
@@ -680,7 +680,7 @@ body, html {
 
 /* Chat Canvas area with Repeating Doodle Vector SVG Background */
 .chat-messages-container {
-    flex-grow: 1;
+    height: 100%;
     width: 100%;
     overflow-y: auto;
     position: relative;
@@ -691,6 +691,7 @@ body, html {
     background-size: 420px;
     
     padding: 24px;
+    padding-bottom: 100px; /* Crucial: ensures scroll ends completely above the blurred input dock */
 }
 
 .chat-messages-inner {
@@ -793,7 +794,15 @@ body, html {
    ======================================================== */
 .chat-footer {
     height: var(--input-height-desktop);
-    background-color: var(--bg-header);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    /* Transparent background with beautiful backdrop blur (prevent eye strain, very modern) */
+    background: rgba(15, 17, 21, 0.65) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
     border-top: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -813,22 +822,17 @@ body, html {
 
 /* Identity Bubble Button */
 .identity-badge {
-    background-color: var(--bg-input);
+    background-color: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--border-color);
     padding: 8px 14px;
     border-radius: 20px;
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
-    transition: background-color var(--transition-speed);
+    cursor: default;
     user-select: none;
     shrink: 0;
     outline: none;
-}
-
-.identity-badge:hover {
-    background-color: rgba(255, 255, 255, 0.04);
 }
 
 .identity-avatar { font-size: 14px; }
@@ -1183,7 +1187,7 @@ body, html {
 @media (max-width: 767px) {
     :root {
         --header-height-mobile: 56px;
-        --input-height-mobile: 68px;
+        --input-height-mobile: 72px;
         --font-chat: var(--font-chat-mobile);
     }
     
@@ -1220,10 +1224,7 @@ let timeLeft = 5;
 // Client-Side Cache for 0ms transitions (SWR Pattern)
 const clientTranslationCache = {};
 
-// Custom unique anonymous chat identity generator lists
-const avatars = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
-const adjectives = ["Toofani", "Desi", "Bindass", "Jugaadi", "Sanskari", "Mast", "Dhakad", "Chalaak", "Shanti", "Gabru", "Naughty", "Shana", "Smart", "Cool"];
-const animals = ["Lion", "Panda", "Fox", "Frog", "Koala", "Monkey", "Unicorn", "Octopus", "Dinosaur", "Sloth", "Owl", "Peacock", "Dolphin"];
+// Popular language codes for sidebar selection
 const popularCodes = ["hi", "es", "en", "fr", "ar", "de", "ru", "pt", "ja", "zh-CN"];
 
 // DOM Elements
@@ -1261,42 +1262,36 @@ const flamesCanvas = document.getElementById("flames-canvas");
 const canvasCtx = flamesCanvas.getContext("2d");
 
 // ========================================================
-// 👤 INITIALIZE USER CREDENTIALS & IDENTITY
+// 👤 PERSISTENT UNIQUE USER NUMBER TAGS (STRICTLY NON-REPEATING)
 // ========================================================
-let currentSender = localStorage.getItem("chatSenderName");
 let currentAvatar = localStorage.getItem("chatSenderAvatar") || "🦁";
+let userNumberTag = sessionStorage.getItem("user_tag");
 
-function setIdentity(avatar, name) {
+// If they don't have a unique tag inside this session, generate one!
+if (!userNumberTag) {
+    // Generate a highly unique 5-digit number tag (e.g. #48291)
+    const uniqueNum = Math.floor(Math.random() * 90000) + 10000;
+    userNumberTag = \`#\${uniqueNum}\`;
+    sessionStorage.setItem("user_tag", userNumberTag);
+}
+
+// Randomize Avatar but strictly keep the persistent User Number Tag
+const avatarsList = ["🦁", "🐯", "🐼", "🦊", "🐸", "🐨", "🐵", "🦄", "🐙", "🦕", "🦥", "🦉", "🦚", "🐬"];
+function setIdentity(avatar) {
     currentAvatar = avatar;
-    currentSender = name;
     localStorage.setItem("chatSenderAvatar", avatar);
-    localStorage.setItem("chatSenderName", name);
     
     postAvatar.value = avatar;
-    postSender.value = \`\${avatar} \${name}\`;
+    // Strictly set their sender nickname to 'User #XXXXX'
+    const fullSenderName = \`User \${userNumberTag}\`;
+    postSender.value = \`\${avatar} \${fullSenderName}\`;
+    
     avatarPreview.textContent = avatar;
-    senderDisplay.textContent = name;
+    senderDisplay.textContent = fullSenderName;
 }
 
-function shuffleIdentity() {
-    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const animal = animals[Math.floor(Math.random() * animals.length)];
-    const name = \`\${adj} \${animal}\`;
-    setIdentity(avatar, name);
-}
-
-if (!currentSender) {
-    shuffleIdentity();
-} else {
-    setIdentity(currentAvatar, currentSender);
-}
-
-shuffleIdentityBtn.addEventListener("click", () => {
-    shuffleIdentity();
-    shuffleIdentityBtn.classList.add("scale-95");
-    setTimeout(() => shuffleIdentityBtn.classList.remove("scale-95"), 100);
-});
+// Initialize Identity with the persistent unique tag
+setIdentity(currentAvatar);
 
 // ========================================================
 // 🔊 REAL-TIME AUDIO SYNTHESIZER (WEB AUDIO API - 100% OFFLINE)
@@ -1311,13 +1306,11 @@ function playRocketLaunchSound(isHighSpeed = false) {
         const gainNode = ctx.createGain();
         const filter = ctx.createBiquadFilter();
         
-        // Settings based on speed
         const duration = isHighSpeed ? 0.35 : 0.65;
         const startFreq = isHighSpeed ? 140 : 80;
         const endFreq = isHighSpeed ? 1600 : 900;
         const volume = isHighSpeed ? 0.45 : 0.25;
         
-        // Lowpass filter for deep motor thrust
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(250, ctx.currentTime);
         filter.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + duration);
@@ -1340,6 +1333,42 @@ function playRocketLaunchSound(isHighSpeed = false) {
     }
 }
 
+function playFireRoarSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const bufferSize = ctx.sampleRate * 0.3; // 0.3s duration buffer
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        let lastOut = 0.0;
+        for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            data[i] = (lastOut + (0.02 * white)) / 1.02;
+            lastOut = data[i];
+            data[i] *= 4.5;
+        }
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 180;
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        noise.start();
+    } catch(e) {}
+}
+
 // ========================================================
 // 🔥 CANVAS BLAZING FIRE ANIMATION LOOP (300ms)
 // ========================================================
@@ -1360,12 +1389,11 @@ class FlameParticle {
         this.speedX = (Math.random() - 0.5) * 6;
         this.speedY = -(Math.random() * 8 + 4);
         this.radius = Math.random() * 24 + 10;
-        // Hot flame colors: orange, red, yellow
         const colors = [
-            "rgba(255, 69, 0, 0.7)",  // Red-orange
-            "rgba(255, 140, 0, 0.6)", // Dark Orange
-            "rgba(255, 215, 0, 0.8)",   // Gold/Yellow
-            "rgba(255, 0, 0, 0.4)"     // Soft red
+            "rgba(255, 69, 0, 0.7)",  
+            "rgba(255, 140, 0, 0.6)", 
+            "rgba(255, 215, 0, 0.8)",   
+            "rgba(255, 0, 0, 0.4)"     
         ];
         this.color = colors[Math.floor(Math.random() * colors.length)];
         this.life = 1.0;
@@ -1394,8 +1422,6 @@ class FlameParticle {
 
 function animateFlames() {
     canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
-    
-    // Spawn 15 particles per frame for intense volume
     for (let i = 0; i < 15; i++) {
         flameParticles.push(new FlameParticle(flamesCanvas.width));
     }
@@ -1415,53 +1441,13 @@ function triggerFireScreenOverlay() {
     flameParticles = [];
     fireOverlay.classList.add("active");
     animateFlames();
-    
-    // Synthesize deep rumble fire roar sound
     playFireRoarSound();
     
-    // Exactly 300ms (0.3s) later, stop everything cleanly
     setTimeout(() => {
         fireOverlay.classList.remove("active");
         cancelAnimationFrame(flameAnimationId);
         canvasCtx.clearRect(0, 0, flamesCanvas.width, flamesCanvas.height);
     }, 300);
-}
-
-function playFireRoarSound() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const bufferSize = ctx.sampleRate * 0.3; // 0.3s duration buffer
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        
-        // Generate brown noise / rumble
-        let lastOut = 0.0;
-        for (let i = 0; i < bufferSize; i++) {
-            const white = Math.random() * 2 - 1;
-            data[i] = (lastOut + (0.02 * white)) / 1.02;
-            lastOut = data[i];
-            data[i] *= 4.5; // Amplify rumble
-        }
-        
-        const noise = ctx.createBufferSource();
-        noise.buffer = buffer;
-        
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 180; // deep bass rumble
-        
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.5, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        
-        noise.start();
-    } catch(e) {}
 }
 
 // ========================================================
@@ -1473,7 +1459,6 @@ let dragOffset = 0;
 let swipeStartTime = 0;
 const maxOffset = 88; // Slide limit inside channel
 
-// Show/Hide Bouncing Guide Arrow (Tutorial helper)
 function checkSwipeGuide() {
     const hasSwiped = localStorage.getItem("hasSwipedBefore") === "true";
     if (!hasSwiped && postText.value.trim().length > 0) {
@@ -1485,13 +1470,14 @@ function checkSwipeGuide() {
 
 postText.addEventListener("input", checkSwipeGuide);
 
-// Drag Handler (Supports Mouse & Touch simultaneously)
+// Drag Handlers
 function startDrag(e) {
+    if (e.target.closest('#message-form') || e.target === postText) return;
     isDragging = true;
     startX = e.clientX || (e.touches && e.touches[0].clientX);
     swipeStartTime = Date.now();
     fireTrail.classList.add("active");
-    swipeRocket.style.transition = "none"; // Stop snapping transitions
+    swipeRocket.style.transition = "none";
     swipeGuide.classList.remove("visible");
 }
 
@@ -1500,7 +1486,6 @@ function handleDrag(e) {
     const currentX = e.clientX || (e.touches && e.touches[0].clientX);
     dragOffset = currentX - startX;
     
-    // Lock drag between 0px and maxOffset (right limit)
     if (dragOffset < 0) dragOffset = 0;
     if (dragOffset > maxOffset) dragOffset = maxOffset;
     
@@ -1515,30 +1500,22 @@ async function endDrag() {
     const swipeEndTime = Date.now();
     const swipeDuration = swipeEndTime - swipeStartTime;
     
-    // Check if dragged past threshold to trigger send
     if (dragOffset >= 80) {
         const text = postText.value.trim();
         if (text) {
-            // Speed calculation
-            const isHighSpeed = swipeDuration < 160; // Swiped very quickly!
+            const isHighSpeed = swipeDuration < 160;
             
-            // Play launching sound & Fire effects!
             playRocketLaunchSound(isHighSpeed);
             if (isHighSpeed) {
                 triggerFireScreenOverlay();
             }
             
-            // Mark tutorial done
             localStorage.setItem("hasSwipedBefore", "true");
-            
-            // Deliver Message
             await sendChatMessage(text);
         } else {
-            // Snap back if input empty
             snapRocketBack();
         }
     } else {
-        // Snap back if threshold not met
         snapRocketBack();
     }
 }
@@ -1550,7 +1527,7 @@ function snapRocketBack() {
     checkSwipeGuide();
 }
 
-// Bind Touch/Mouse Event Listeners
+// Bind Touch/Mouse Drag events
 swipeRocket.addEventListener("mousedown", startDrag);
 window.addEventListener("mousemove", handleDrag);
 window.addEventListener("mouseup", endDrag);
@@ -1560,17 +1537,47 @@ window.addEventListener("touchmove", handleDrag, { passive: false });
 window.addEventListener("touchend", endDrag);
 
 // ========================================================
+// ⌨️ ENTER KEY PRESS SUBMIT FLOW (WITH AUTO-SLIDE ANIMATION)
+// ========================================================
+postText.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const text = postText.value.trim();
+        if (!text) return;
+
+        // Mark tutorial done
+        localStorage.setItem("hasSwipedBefore", "true");
+        swipeGuide.classList.remove("visible");
+
+        // 1. Trigger Auto-Slide animation on Rocket (Rockets slides by itself!)
+        swipeRocket.style.transition = "transform 180ms ease-in";
+        swipeRocket.style.transform = \`translateX(\${maxOffset}px)\`;
+        fireTrail.classList.add("active");
+
+        // 2. Play synthesized launcher sound and full screen fire screen overlay!
+        playRocketLaunchSound(true); // Treat Enter as high-speed instant launch
+        triggerFireScreenOverlay();
+
+        // 3. Clear text immediately and send message
+        postText.value = "";
+        await sendChatMessage(text);
+
+        // 4. Snaps the rocket smoothly back after flight
+        setTimeout(() => {
+            fireTrail.classList.remove("active");
+            snapRocketBack();
+        }, 300);
+    }
+});
+
+// ========================================================
 // 📩 CHAT MESSAGES DISPATCH (OPTIMISTIC UI UPDATE)
 // ========================================================
 async function sendChatMessage(text) {
-    // Clear input box immediately (0ms response time!)
-    postText.value = "";
-    snapRocketBack();
-    
     const tempMsgId = \`temp_\${Date.now()}\`;
     const optimisticMsg = {
         id: tempMsgId,
-        sender: \`\${currentAvatar} \${currentSender}\`,
+        sender: \`\${currentAvatar} User \${userNumberTag}\`,
         avatar: currentAvatar,
         text: text,
         original_text: text,
@@ -1581,7 +1588,6 @@ async function sendChatMessage(text) {
         isPending: true
     };
     
-    // Instant UI injection
     messagesData.push(optimisticMsg);
     renderMessages();
     scrollToBottom();
@@ -1590,7 +1596,7 @@ async function sendChatMessage(text) {
         const response = await fetch("/api/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: \`\${currentAvatar} \${currentSender}\`, avatar: currentAvatar, text })
+            body: JSON.stringify({ sender: \`\${currentAvatar} User \${userNumberTag}\`, avatar: currentAvatar, text })
         });
         
         if (response.ok) {
@@ -1626,7 +1632,6 @@ async function sendChatMessage(text) {
 // 🔄 STALE-WHILE-REVALIDATE REFRESH LOOPS
 // ========================================================
 async function fetchMessages(forceScroll = false) {
-    // SWR Cache trigger (0ms transition)
     if (clientTranslationCache[selectedLanguage]) {
         messagesData = clientTranslationCache[selectedLanguage];
         renderMessages();
@@ -1796,7 +1801,7 @@ function closeLanguageModal() {
 }
 
 openModalBtn.addEventListener("click", openLanguageModal);
-closeModalBtn.addEventListener("click", closeLanguageModal);
+closeLangModalBtn.addEventListener("click", closeLanguageModal);
 
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && langModal.classList.contains("active")) closeLanguageModal();
@@ -1804,6 +1809,94 @@ window.addEventListener("keydown", (e) => {
 langModal.addEventListener("click", (e) => {
     if (e.target === langModal) closeLanguageModal();
 });
+
+// ========================================================
+// 📦 GENERAL LAYOUT INITIALIZATION
+// ========================================================
+function scrollToBottom() {
+    setTimeout(() => {
+        messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+    }, 50);
+}
+
+// Render clean premium chat bubbles with enlarged text
+function renderMessages() {
+    if (messagesData.length === 0) {
+        messagesContainer.innerHTML = \`
+            <div class="h-full flex flex-col items-center justify-center text-center text-xs text-neutral-400 p-6">
+                <i class="fa-regular fa-comment-dots text-3xl text-neutral-600 mb-2"></i>
+                <h4 class="font-bold text-neutral-300 text-sm">No Messages yet</h4>
+                <p class="max-w-xs mt-1 text-neutral-500">Be the first to join the chat and write a message in any language!</p>
+            </div>
+        \`;
+        return;
+    }
+
+    messagesContainer.innerHTML = "";
+    
+    const wrapper = document.createElement("div");
+    wrapper.className = "chat-messages-inner";
+
+    messagesData.forEach(msg => {
+        const isMe = msg.sender.includes(\`User \${userNumberTag}\`);
+        const isOriginal = msg.original_lang === selectedLanguage;
+        
+        const row = document.createElement("div");
+        row.className = \`message-row \${isMe ? 'outgoing' : 'incoming'}\`;
+
+        const bubbleStyle = isMe
+            ? "bg-gradient-to-tr from-[#0084ff] to-[#1877f2] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[15px] font-medium leading-relaxed border border-blue-600/30 shadow-sm"
+            : "bg-white text-neutral-800 rounded-2xl rounded-tl-sm px-4 py-2.5 text-[15px] font-medium border border-neutral-300 shadow-sm leading-relaxed";
+
+        let metaString = isOriginal ? \`Original: \${msg.original_lang_name}\` : \`Translated from \${msg.original_lang_name}\`;
+        const toggleBtnHtml = !isOriginal
+            ? \`<button onclick="toggleOriginal('\${msg.id}')" id="btn-orig-\${msg.id}" class="original-text-link">Show Original</button>\`
+            : '';
+
+        const statusHtml = msg.isPending 
+            ? \`<span class="animate-pulse"><i class="fa-regular fa-clock"></i> sending...</span>\`
+            : \`<span>\${msg.timestamp.split(" ")[1] ? msg.timestamp.split(" ")[1].substring(0, 5) : msg.timestamp}</span>\`;
+
+        row.innerHTML = \`
+            \${!isMe ? \`<span class="message-sender">\${msg.sender}</span>\` : ''}
+            <div class="message-bubble">
+                <div>\${msg.translated_text}</div>
+                
+                <div class="message-meta-info">
+                    \${statusHtml}
+                    <span>•</span>
+                    <span>\${metaString}</span>
+                    \${toggleBtnHtml ? \`<span>•</span> \${toggleBtnHtml}\` : ''}
+                </div>
+                
+                \${!isOriginal ? \`
+                    <div id="box-orig-\${msg.id}" class="original-collapsible-box hidden">
+                        Original: "\${msg.original_text}"
+                    </div>
+                \` : ''}
+            </div>
+        \`;
+        wrapper.appendChild(row);
+    });
+
+    messagesContainer.appendChild(wrapper);
+}
+
+window.toggleOriginal = function(msgId) {
+    const box = document.getElementById(\`box-orig-\${msgId}\`);
+    const btn = document.getElementById(\`btn-orig-\${msgId}\`);
+    if (box.classList.contains("hidden")) {
+        box.classList.remove("hidden");
+        btn.textContent = "Hide Original";
+        scrollToBottom();
+    } else {
+        box.classList.add("hidden");
+        btn.textContent = "Show Original";
+    }
+};
 
 // ========================================================
 // 🚀 BOOTSTRAP LOGIC
