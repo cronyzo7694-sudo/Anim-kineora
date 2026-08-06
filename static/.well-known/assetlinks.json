@@ -1,8 +1,13 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.batiyan.android",
-        "sha256_cert_fingerprints": ["3F:1D:65:29:8D:99:93:AF:BD:FA:C1:5A:5F:AF:A6:CB:94:6C:B8:23:FF:77:3E:D6:C1:90:8C:C7:94:31:DA:D0"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.batiyan.android",
+      "sha256_cert_fingerprints": [
+        "17:FE:A7:F0:32:50:C5:08:74:A9:42:94:14:5E:9A:99:1B:56:7C:55:18:A1:83:0C:B2:44:F7:06:D5:98:6D:7F",
+        "3F:1D:65:29:8D:99:93:AF:BD:FA:C1:5A:5F:AF:A6:CB:94:6C:B8:23:FF:77:3E:D6:C1:90:8C:C7:94:31:DA:D0"
+      ]
+    }
+  }
+]
